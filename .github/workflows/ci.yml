@@ -2,9 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    types:
+      - opened
+  workflow_dispatch: # allow manual execution
 
 jobs:
   test:
