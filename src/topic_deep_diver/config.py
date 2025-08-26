@@ -4,7 +4,7 @@ Configuration management for Topic Deep Diver MCP server.
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 from dotenv import load_dotenv
@@ -25,7 +25,7 @@ class MCPConfig(BaseModel):
     """MCP Protocol configuration."""
 
     protocol_version: str = "2025-06-18"
-    transport: str = "stdio"  # stdio, sse, streamable-http
+    transport: Literal["stdio", "sse", "streamable-http"] = "stdio"
 
 
 class ResearchConfig(BaseModel):

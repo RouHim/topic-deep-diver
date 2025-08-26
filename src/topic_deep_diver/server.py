@@ -3,7 +3,7 @@ Core MCP server implementation for Topic Deep Diver.
 """
 
 import uuid
-from typing import Any
+from typing import Any, Literal, cast
 
 from mcp.server import FastMCP
 from pydantic import BaseModel, Field
@@ -256,7 +256,8 @@ class DeepResearchServer:
 
         # Run the FastMCP server with specified transport
         # The FastMCP framework automatically handles protocol version headers
-        self.mcp.run(transport=self.config.mcp.transport)
+        transport = cast(Literal["stdio", "sse", "streamable-http"], self.config.mcp.transport)
+        self.mcp.run(transport=transport)
 
     async def run(self) -> None:
         """Start the MCP server asynchronously."""
@@ -274,4 +275,5 @@ class DeepResearchServer:
             await self.mcp.run_streamable_http_async()
         else:
             # Fall back to sync run for unknown transports
-            self.mcp.run(transport=self.config.mcp.transport)
+            transport = cast(Literal["stdio", "sse", "streamable-http"], self.config.mcp.transport)
+            self.mcp.run(transport=transport)
