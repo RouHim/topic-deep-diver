@@ -3,6 +3,7 @@ Core MCP server implementation for Topic Deep Diver.
 """
 
 import uuid
+from datetime import datetime, timedelta
 from typing import Any, Literal, cast
 
 from mcp.server import FastMCP
@@ -121,7 +122,7 @@ class DeepResearchServer:
                 ],
                 confidence_score=0.85,
                 metadata={
-                    "research_started": "2025-08-26T13:59:34Z",
+                    "research_started": datetime.utcnow().isoformat() + "Z",
                     "system_version": "0.1.0",
                     "mcp_protocol": self.config.mcp.protocol_version,
                 },
@@ -175,6 +176,7 @@ class DeepResearchServer:
 
             # TODO: Implement actual export functionality with file generation
             # For now, return structured resource links
+            expires_at = (datetime.utcnow() + timedelta(days=30)).isoformat() + "Z"
             return ExportResult(
                 session_id=session_id,
                 format=format,
@@ -186,7 +188,7 @@ class DeepResearchServer:
                     f"{base_uri}/citations.bib",  # Bibliography in BibTeX format
                 ],
                 size="2.5MB",
-                expires_at="2025-09-25T11:46:14Z",
+                expires_at=expires_at,
             )
 
         # Add a new tool for accessing research resources
@@ -219,7 +221,7 @@ class DeepResearchServer:
                 "resource_type": resource_type,
                 "resource_uri": resource_uri,
                 "content_available": True,
-                "last_updated": "2025-08-26T14:00:00Z",
+                "last_updated": datetime.utcnow().isoformat() + "Z",
                 "size_bytes": 1024 * 50,  # 50KB placeholder
                 "mime_type": self._get_mime_type_for_resource(resource_type),
                 "description": self._get_resource_description(resource_type),
