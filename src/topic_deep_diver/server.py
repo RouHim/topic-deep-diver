@@ -256,7 +256,9 @@ class DeepResearchServer:
 
         # Run the FastMCP server with specified transport
         # The FastMCP framework automatically handles protocol version headers
-        transport = cast(Literal["stdio", "sse", "streamable-http"], self.config.mcp.transport)
+        transport = cast(
+            Literal["stdio", "sse", "streamable-http"], self.config.mcp.transport
+        )
         self.mcp.run(transport=transport)
 
     async def run(self) -> None:
@@ -275,5 +277,7 @@ class DeepResearchServer:
             await self.mcp.run_streamable_http_async()
         else:
             # Fall back to sync run for unknown transports
-            transport = cast(Literal["stdio", "sse", "streamable-http"], self.config.mcp.transport)
+            transport = cast(
+                Literal["stdio", "sse", "streamable-http"], self.config.mcp.transport
+            )
             self.mcp.run(transport=transport)
