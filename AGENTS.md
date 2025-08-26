@@ -7,6 +7,27 @@
 - **Type check**: `mypy src/` 
 - **Run server**: `python -m topic_deep_diver` or `uv run python -m topic_deep_diver`
 
+## Pre-Commit Quality Gates
+**ALWAYS run these commands before committing:**
+```bash
+# Run all quality checks together
+uv run pytest tests/ && uv run ruff check . && uv run black --check . && uv run mypy src/
+
+# Or run individually:
+uv run pytest tests/ -v          # Run tests with verbose output
+uv run ruff check .              # Check linting (use --fix to auto-fix)
+uv run black --check .           # Check formatting (use without --check to format)
+uv run mypy src/                 # Type checking
+```
+
+**If any command fails, fix the issues before committing.** The GitHub CI pipeline will fail if these checks don't pass.
+
+## CI Pipeline Status
+- **GitHub Actions**: `.github/workflows/ci.yml` runs on push/PR
+- **Quality Gates**: pytest, ruff, black, mypy must all pass
+- **Python Version**: 3.11 (single version, no matrix testing)
+- **OS**: Ubuntu latest only
+
 ## Code Style Guidelines
 - **Language**: Python 3.11+, use async/await for I/O operations
 - **Imports**: Use absolute imports (`from topic_deep_diver.module import Class`), group stdlib/3rd-party/local
