@@ -93,7 +93,13 @@ class DeepResearchServer:
             # Generate unique session ID
             session_id = str(uuid.uuid4())
 
-            # TODO: Implement actual research logic
+            # TODO: Implement actual research logic:
+            #   - Integrate with external search engines (Google, Bing, academic DBs)
+            #   - Aggregate and process data from multiple sources (web, scholarly)
+            #   - Apply NLP for summarization, entity extraction, sentiment analysis
+            #   - Score source credibility and relevance
+            #   - Handle asynchronous data fetching and error management
+            #   - Structure results according to the ResearchResult schema
             # For now, return structured placeholder data
             result = ResearchResult(
                 session_id=session_id,
