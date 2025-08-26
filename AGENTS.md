@@ -25,7 +25,7 @@ uv run mypy src/                 # Type checking
 ## CI Pipeline Status
 - **GitHub Actions**: `.github/workflows/ci.yml` runs on push/PR
 - **Quality Gates**: pytest, ruff, black, mypy must all pass
-- **Python Version**: 3.11 (single version, no matrix testing)
+- **Python Version**: 3.11
 - **OS**: Ubuntu latest only
 
 ## Code Style Guidelines
