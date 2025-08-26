@@ -276,16 +276,8 @@ class DeepResearchServer:
         self.logger.info(f"Transport: {self.config.mcp.transport}")
         self.logger.info("Structured output support: ENABLED")
 
-        # For async context, use the appropriate async runner based on transport
-        if self.config.mcp.transport == "stdio":
-            await self.mcp.run_stdio_async()
-        elif self.config.mcp.transport == "sse":
-            await self.mcp.run_sse_async()
-        elif self.config.mcp.transport == "streamable-http":
-            await self.mcp.run_streamable_http_async()
-        else:
-            # Fall back to sync run for unknown transports
-            transport = cast(
-                Literal["stdio", "sse", "streamable-http"], self.config.mcp.transport
-            )
-            self.mcp.run(transport=transport)
+        # FastMCP async runner - use sync version for compatibility
+        transport = cast(
+            Literal["stdio", "sse", "streamable-http"], self.config.mcp.transport
+        )
+        self.mcp.run(transport=transport)

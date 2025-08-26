@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "topic-deep-diver"
 version = "0.1.0"
 description = "Fully automated deep research MCP server with comprehensive topic analysis"
-authors = [{name = "RouHim", email = "your.email@example.com"}]
+authors = [{name = "RouHim", email = "rouhim@example.com"}]
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

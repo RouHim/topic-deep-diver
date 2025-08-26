@@ -40,7 +40,7 @@ class ResearchConfig(BaseModel):
 class SearchEngineConfig(BaseModel):
     """Search engine configuration."""
 
-    base_url: str = "https://search.himmelstein.info"
+    base_url: str = ""  # Must be configured in config.yaml or env
     enabled: bool = True
     timeout: int = 30
     max_results: int = 20
