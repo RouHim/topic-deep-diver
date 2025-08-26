@@ -2,11 +2,8 @@
 Main entry point for the Topic Deep Diver MCP server.
 """
 
-import asyncio
-from typing import Any
-
+from .logging_config import get_logger, setup_logging
 from .server import DeepResearchServer
-from .logging_config import setup_logging, get_logger
 
 
 def setup_app_logging() -> None:
@@ -18,7 +15,7 @@ async def main() -> None:
     """Main entry point for the MCP server."""
     setup_app_logging()
     logger = get_logger("main")
-    
+
     try:
         server = DeepResearchServer()
         logger.info("Starting Topic Deep Diver MCP Server...")
@@ -34,7 +31,7 @@ def main_sync() -> None:
     """Synchronous entry point for the MCP server."""
     setup_app_logging()
     logger = get_logger("main")
-    
+
     try:
         server = DeepResearchServer()
         logger.info("Starting Topic Deep Diver MCP Server...")
