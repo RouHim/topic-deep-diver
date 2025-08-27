@@ -721,7 +721,7 @@ class DeepResearchServer:
 
             Args:
                 session_id: Unique identifier for the research session
-                format: Export format - options: markdown, json, html, txt
+                format: Export format - options: markdown, pdf, json, html, txt
 
             Returns:
                 Export results with resource links for downloadable content

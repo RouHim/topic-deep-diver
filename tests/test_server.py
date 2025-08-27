@@ -133,7 +133,7 @@ async def test_scope_configuration():
     academic_config = server._get_scope_config("academic")
     assert academic_config["max_sources"] == 50
     assert academic_config["timeout_minutes"] == 10
-    assert comp_config["depth"] == "detailed"
+    assert academic_config["depth"] == "scholarly"
 
 
 @pytest.mark.asyncio
