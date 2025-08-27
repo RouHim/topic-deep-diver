@@ -4,6 +4,8 @@ Tests for Topic Deep Diver MCP server functionality.
 
 from datetime import datetime, timedelta
 
+import pytest
+
 # UTC compatibility for Python <3.11
 try:
     from datetime import UTC
@@ -11,8 +13,6 @@ except ImportError:
     from datetime import timezone
 
     UTC = timezone.utc
-
-import pytest
 
 from topic_deep_diver.server import DeepResearchServer
 
