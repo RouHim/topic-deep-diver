@@ -62,11 +62,11 @@ class DeepResearchServer:
         # Create FastMCP instance with structured content
         self.mcp = FastMCP(
             name=self.config.server.name,
-            instructions=("Advanced deep research MCP server providing comprehensive " "topic analysis and synthesis."),
+            instructions="Advanced deep research MCP server providing comprehensive topic analysis and synthesis.",
         )
         self._setup_tools()
 
-        self.logger.info("DeepResearchServer initialized with structured output support " "and session management")
+        self.logger.info("DeepResearchServer initialized with structured output support and session management")
 
     async def _get_session_lock(self, session_id: str) -> asyncio.Lock:
         """Get or create a lock for the session."""
@@ -338,7 +338,7 @@ class DeepResearchServer:
                     "title": f"Source about {keyword}",
                     "url": f"https://example.com/source-{i + 1}",
                     "type": "web",
-                    "summary": f"This source discusses {keyword} in the context " f"of {topic}.",
+                    "summary": f"This source discusses {keyword} in the context of {topic}.",
                     "credibility_score": 0.7 + (i % 3) * 0.1,
                     "date_published": "2024-01-01",
                     "source_quality": "reliable" if i % 2 == 0 else "moderate",
@@ -389,7 +389,7 @@ class DeepResearchServer:
 
     async def _conduct_academic_search(self, topic: str, keywords: list[str], max_sources: int = 50) -> list[dict[str, Any]]:
         """Conduct academic search across scholarly databases."""
-        # TODO: Implement actual academic search (Issue #7)
+        # TODO: Implement actual academic search (Issue #3)
         sources = await self._conduct_comprehensive_search(topic, keywords, max_sources // 2)
 
         # Add mock academic sources
@@ -469,9 +469,9 @@ class DeepResearchServer:
         quality_ratio = len(high_quality_sources) / total_sources if total_sources > 0 else 0
 
         if depth == "surface":
-            summary = f"Quick analysis of {topic} based on {total_sources} sources reveals key insights. "
-            summary += (
-                f"Research shows diverse perspectives on this topic with " f"{quality_ratio:.1%} high-quality sources."
+            summary = (
+                f"Quick analysis of {topic} based on {total_sources} sources reveals key insights. "
+                f"Research shows diverse perspectives on this topic with {quality_ratio:.1%} high-quality sources."
             )
 
             findings = [
@@ -482,9 +482,11 @@ class DeepResearchServer:
             confidence = min(0.9, 0.5 + quality_ratio * 0.4)
 
         elif depth == "detailed":
-            summary = f"Comprehensive research on {topic} synthesized from {total_sources} diverse sources "
-            summary += f"provides detailed insights. Analysis of {len(high_quality_sources)} high-quality sources "
-            summary += "reveals multiple perspectives and evidence-based conclusions."
+            summary = (
+                f"Comprehensive research on {topic} synthesized from {total_sources} diverse sources "
+                f"provides detailed insights. Analysis of {len(high_quality_sources)} high-quality sources "
+                "reveals multiple perspectives and evidence-based conclusions."
+            )
 
             findings = [
                 f"Comprehensive overview: {topic} encompasses multiple dimensions",
@@ -496,9 +498,11 @@ class DeepResearchServer:
             confidence = min(0.95, 0.6 + quality_ratio * 0.35)
 
         else:  # scholarly
-            summary = f"Scholarly analysis of {topic} draws from {total_sources} rigorously evaluated sources, "
-            summary += f"including {len([s for s in sources if s.get('type') == 'academic'])} peer-reviewed publications. "
-            summary += "This research synthesis provides evidence-based insights with high methodological rigor."
+            summary = (
+                f"Scholarly analysis of {topic} draws from {total_sources} rigorously evaluated sources, "
+                f"including {len([s for s in sources if s.get('type') == 'academic'])} peer-reviewed publications. "
+                "This research synthesis provides evidence-based insights with high methodological rigor."
+            )
 
             academic_sources = [s for s in sources if s.get("type") == "academic"]
             citation_count = sum(s.get("citations", 0) for s in academic_sources)

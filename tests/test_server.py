@@ -2,7 +2,7 @@
 Tests for Topic Deep Diver MCP server functionality.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -294,6 +294,7 @@ async def test_export_content_generation():
     server = DeepResearchServer()
 
     # Create mock session data
+    now = datetime.now(UTC)
     mock_session = {
         "session_id": "test-123",
         "topic": "AI Research",
@@ -301,9 +302,9 @@ async def test_export_content_generation():
         "status": "completed",
         "stage": "completed",
         "progress": 1.0,
-        "created_at": datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC),
-        "updated_at": datetime(2024, 1, 1, 1, 0, 0, tzinfo=UTC),
-        "expires_at": datetime(2024, 1, 2, 0, 0, 0, tzinfo=UTC),
+        "created_at": now,
+        "updated_at": now + timedelta(hours=1),
+        "expires_at": now + timedelta(days=1),
         "confidence_score": 0.85,
         "executive_summary": "Test summary",
         "key_findings": ["Finding 1", "Finding 2"],
