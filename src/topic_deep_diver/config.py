@@ -98,9 +98,7 @@ class ConfigManager:
         # Research config
         cache_enabled = os.getenv("CACHE_ENABLED")
         if cache_enabled:
-            config_dict.setdefault("research", {})["cache_enabled"] = (
-                cache_enabled.lower() == "true"
-            )
+            config_dict.setdefault("research", {})["cache_enabled"] = cache_enabled.lower() == "true"
 
         return config_dict
 
