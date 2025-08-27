@@ -2,7 +2,15 @@
 Tests for Topic Deep Diver MCP server functionality.
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
+
+# UTC compatibility for Python <3.11
+try:
+    from datetime import UTC
+except ImportError:
+    from datetime import timezone
+
+    UTC = timezone.utc
 
 import pytest
 

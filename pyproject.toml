@@ -49,6 +49,9 @@ select = [
     "C4", # flake8-comprehensions
     "UP", # pyupgrade
 ]
+ignore = [
+    "UP017", # Allow timezone.utc for Python <3.11 compatibility
+]
 
 [tool.mypy]
 python_version = "3.11"

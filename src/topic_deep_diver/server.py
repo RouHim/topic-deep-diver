@@ -5,8 +5,16 @@ Core MCP server implementation for Topic Deep Diver.
 import asyncio
 import json
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import Any, Literal, cast
+
+# UTC compatibility for Python <3.11
+try:
+    from datetime import UTC
+except ImportError:
+    from datetime import timezone
+
+    UTC = timezone.utc
 
 from mcp.server import FastMCP
 from pydantic import BaseModel, Field
@@ -485,7 +493,7 @@ class DeepResearchServer:
             summary = (
                 f"Comprehensive research on {topic} synthesized from {total_sources} diverse sources "
                 f"provides detailed insights. Analysis of {len(high_quality_sources)} high-quality sources "
-                "reveals multiple perspectives and evidence-based conclusions."
+                f"reveals multiple perspectives and evidence-based conclusions."
             )
 
             findings = [
