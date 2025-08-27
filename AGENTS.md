@@ -1,5 +1,75 @@
 # Topic Deep Diver - Project Agents & Knowledge Base
 
+## Build Commands & Development
+- **Install deps**: `uv sync --dev` (with dev dependencies)
+- **Run tests**: `pytest tests/` (run all), `pytest tests/test_server.py::test_specific_function` (single test)
+- **Lint**: `ruff check .` (check), `ruff check --fix .` (fix), `black .` (format)
+- **Type check**: `mypy src/` 
+- **Run server**: `python -m topic_deep_diver` or `uv run python -m topic_deep_diver`
+
+## Pre-Commit Quality Gates
+**ALWAYS run these commands before committing:**
+```bash
+# Run all quality checks together
+uv run pytest tests/ && uv run ruff check . && uv run black --check . && uv run mypy src/
+
+# Or run individually:
+uv run pytest tests/ -v          # Run tests with verbose output
+uv run ruff check .              # Check linting (use --fix to auto-fix)
+uv run black --check .           # Check formatting (use without --check to format)
+uv run mypy src/                 # Type checking
+```
+
+**If any command fails, fix the issues before committing.** The GitHub CI pipeline will fail if these checks don't pass.
+
+## CI Pipeline Status
+- **GitHub Actions**: `.github/workflows/ci.yml` runs on push/PR
+- **Quality Gates**: pytest, ruff, black, mypy must all pass
+- **Python Version**: 3.11
+- **OS**: Ubuntu latest only
+
+## Code Style Guidelines
+- **Language**: Python 3.11+, use async/await for I/O operations
+- **Imports**: Use absolute imports (`from topic_deep_diver.module import Class`), group stdlib/3rd-party/local
+- **Formatting**: Black (88 char line length), ruff for linting, type hints required (`disallow_untyped_defs = true`)
+- **Naming**: snake_case for functions/variables, PascalCase for classes, UPPER_CASE for constants
+- **Error handling**: Use specific exceptions, log with structured messages via `get_logger("module_name")`
+- **MCP compliance**: Follow 2025-06-18 spec, use FastMCP, structured tool outputs, OAuth Resource Server patterns
+- **Testing**: pytest with asyncio_mode = "auto", use descriptive test names, mock external APIs
+- **Documentation**: Docstrings for all public functions/classes, include Args/Returns sections
+
+## Project Structure
+```
+topic-deep-diver/
+├── src/topic_deep_diver/      # Main package (note: src/ prefix)
+│   ├── server.py              # MCP server implementation
+│   ├── config.py              # Configuration management
+│   ├── logging_config.py      # Logging setup
+│   └── main.py                # Entry point
+├── tests/                     # Test suite
+├── config/                    # Configuration files
+└── pyproject.toml             # Project metadata & deps
+```
+
+## MCP Tools API
+The server exposes three core MCP tools:
+
+1. **`deep_research(topic: str, scope: str = "comprehensive")`** - Main research orchestrator
+   - Scope options: "quick", "comprehensive", "academic" 
+   - Returns: Structured research report with findings, sources, citations
+
+2. **`research_status(session_id: str)`** - Monitor research progress
+   - Returns: Real-time progress updates and current research stage
+
+3. **`export_research(session_id: str, format: str = "markdown")`** - Export results
+   - Format options: "markdown", "pdf", "json", "html"
+   - Returns: Resource link to exported research report
+
+## Configuration
+- Config file: `config/config.yaml` (copy from `config/config.example.yaml`)
+- Environment variable: `CONFIG_PATH` for custom config location
+- Dependencies: Redis for caching, external API keys optional for enhanced search
+
 ## Project Overview
 
 **Topic Deep Diver** is a fully automated deep research MCP (Model Context Protocol) server that provides comprehensive topic analysis using multiple search engines and AI-powered synthesis. The system is designed to rival commercial solutions like Perplexity's Deep Research while maintaining full automation and extensive online search capabilities.

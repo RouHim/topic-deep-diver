@@ -1,0 +1,14 @@
+2025-08-26 13:59:34 - topic_deep_diver - INFO - Logging initialized at INFO level
+2025-08-26 13:59:34 - topic_deep_diver.server - INFO - DeepResearchServer initialized
+2025-08-26 14:00:41 - topic_deep_diver - INFO - Logging initialized at INFO level
+2025-08-26 14:00:42 - topic_deep_diver.server - INFO - DeepResearchServer initialized with structured output support
+2025-08-26 14:01:23 - topic_deep_diver - INFO - Logging initialized at INFO level
+2025-08-26 14:01:23 - topic_deep_diver.server - INFO - DeepResearchServer initialized with structured output support
+2025-08-26 14:01:30 - topic_deep_diver - INFO - Logging initialized at INFO level
+2025-08-26 14:01:30 - topic_deep_diver.server - INFO - DeepResearchServer initialized with structured output support
+2025-08-26 14:01:30 - topic_deep_diver.main - INFO - Starting Topic Deep Diver MCP Server...
+2025-08-26 14:01:30 - topic_deep_diver.server - INFO - Topic Deep Diver MCP Server starting...
+2025-08-26 14:01:30 - topic_deep_diver.server - INFO - MCP Protocol Version: 2025-06-18
+2025-08-26 14:01:30 - topic_deep_diver.server - INFO - Transport: stdio
+2025-08-26 14:01:30 - topic_deep_diver.server - INFO - Structured output support: ENABLED
+2025-08-26 14:01:30 - topic_deep_diver.main - ERROR - Server error: Already running asyncio in this thread

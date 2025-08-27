@@ -1,0 +1,34 @@
+# Configuration settings for Topic Deep Diver MCP Server
+
+# Server settings
+server:
+  name: "Topic Deep Diver"
+  version: "0.1.0"
+  host: "localhost"
+  port: 8000
+  log_level: "INFO"
+
+# MCP Protocol settings
+mcp:
+  protocol_version: "2025-06-18"
+  transport: "stdio"  # stdio, sse, streamable-http
+
+# OAuth settings
+oauth:
+  authorization_endpoint: "https://auth.topicdeepDiver.com/oauth2/authorize"
+  resource_indicators_required: true
+
+# Research settings
+research:
+  default_scope: "comprehensive"
+  max_sources: 50
+  timeout_minutes: 10
+  cache_enabled: true
+
+# Search engine settings
+search_engines:
+  searxng:
+    base_url: "https://search.himmelstein.info"
+    enabled: true
+  
+  # Additional engines can be configured here
