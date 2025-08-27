@@ -32,7 +32,7 @@ dev = [
 topic-deep-diver = "topic_deep_diver.main:main"
 
 [tool.black]
-line-length = 125
+line-length = 88
 target-version = ['py311']
 
 [tool.ruff]
