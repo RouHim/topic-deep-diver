@@ -189,4 +189,4 @@ cache/
 
 # MCP server runtime files
 mcp_server.log
-server.pid__pycache__/
+server.pid
