@@ -43,7 +43,9 @@ class ResearchResult(BaseModel):
     key_findings: list[str] = Field(description="List of key research findings")
     sources: list[dict[str, Any]] = Field(description="List of source information")
     confidence_score: float = Field(description="Confidence score (0.0 to 1.0)")
-    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+    metadata: dict[str, Any] = Field(
+        default_factory=dict, description="Additional metadata"
+    )
 
 
 class ExportResult(BaseModel):
@@ -85,7 +87,9 @@ class DeepResearchServer:
         )
         self._setup_tools()
 
-        self.logger.info("DeepResearchServer initialized with structured output support and session management")
+        self.logger.info(
+            "DeepResearchServer initialized with structured output support and session management"
+        )
 
     async def _get_session_lock(self, session_id: str) -> asyncio.Lock:
         """Get or create a lock for the session."""
@@ -126,7 +130,9 @@ class DeepResearchServer:
         }
 
         self._sessions[session_id] = session_data
-        self.logger.info(f"Created session {session_id} for topic: {topic} (scope: {scope})")
+        self.logger.info(
+            f"Created session {session_id} for topic: {topic} (scope: {scope})"
+        )
         return session_id
 
     def _get_scope_config(self, scope: str) -> dict[str, Any]:
@@ -187,7 +193,9 @@ class DeepResearchServer:
 
         try:
             # Update status to in_progress
-            await self._update_session(session_id, status="in_progress", stage="planning")
+            await self._update_session(
+                session_id, status="in_progress", stage="planning"
+            )
 
             # Execute research pipeline based on scope
             if scope == "quick":
@@ -198,14 +206,18 @@ class DeepResearchServer:
                 await self._execute_comprehensive_research(session_id)
 
             # Mark as completed
-            await self._update_session(session_id, status="completed", stage="completed", progress=1.0)
+            await self._update_session(
+                session_id, status="completed", stage="completed", progress=1.0
+            )
             self.logger.info(f"Research completed for session {session_id}")
 
             return self._sessions[session_id]
 
         except Exception as e:
             self.logger.error(f"Research failed for session {session_id}: {e}")
-            await self._update_session(session_id, status="failed", stage="failed", error_message=str(e))
+            await self._update_session(
+                session_id, status="failed", stage="failed", error_message=str(e)
+            )
             raise
 
     async def _execute_quick_research(self, session_id: str) -> None:
@@ -247,7 +259,9 @@ class DeepResearchServer:
 
         # Stage 2: Searching (50% progress)
         await self._update_session(session_id, stage="searching", progress=0.2)
-        sources = await self._conduct_comprehensive_search(topic, keywords, max_sources=30)
+        sources = await self._conduct_comprehensive_search(
+            topic, keywords, max_sources=30
+        )
         await asyncio.sleep(2.0)  # Simulate search time
 
         # Stage 3: Analyzing (80% progress)
@@ -257,7 +271,9 @@ class DeepResearchServer:
 
         # Stage 4: Synthesizing (100% progress)
         await self._update_session(session_id, stage="synthesizing", progress=0.9)
-        result = await self._synthesize_findings(topic, analyzed_sources, depth="detailed")
+        result = await self._synthesize_findings(
+            topic, analyzed_sources, depth="detailed"
+        )
 
         # Update session with results
         await self._update_session(
@@ -303,7 +319,9 @@ class DeepResearchServer:
             progress=1.0,
         )
 
-    async def _generate_search_keywords(self, topic: str, max_keywords: int = 10) -> list[str]:
+    async def _generate_search_keywords(
+        self, topic: str, max_keywords: int = 10
+    ) -> list[str]:
         """Generate search keywords from topic."""
         # TODO: Implement actual keyword generation using NLP
         # For now, create basic keywords from topic
@@ -326,7 +344,9 @@ class DeepResearchServer:
 
         return keywords[:max_keywords]
 
-    async def _generate_academic_keywords(self, topic: str, max_keywords: int = 15) -> list[str]:
+    async def _generate_academic_keywords(
+        self, topic: str, max_keywords: int = 15
+    ) -> list[str]:
         """Generate academic-focused keywords."""
         keywords = await self._generate_search_keywords(topic, max_keywords // 2)
 
@@ -344,7 +364,9 @@ class DeepResearchServer:
         keywords.extend(academic_terms)
         return keywords[:max_keywords]
 
-    async def _conduct_web_search(self, topic: str, keywords: list[str], max_sources: int = 10) -> list[dict[str, Any]]:
+    async def _conduct_web_search(
+        self, topic: str, keywords: list[str], max_sources: int = 10
+    ) -> list[dict[str, Any]]:
         """Conduct web search for sources."""
         # TODO: Implement actual web search integration (Issue #3)
         # For now, generate mock sources
@@ -406,10 +428,14 @@ class DeepResearchServer:
 
         return sources[:max_sources]
 
-    async def _conduct_academic_search(self, topic: str, keywords: list[str], max_sources: int = 50) -> list[dict[str, Any]]:
+    async def _conduct_academic_search(
+        self, topic: str, keywords: list[str], max_sources: int = 50
+    ) -> list[dict[str, Any]]:
         """Conduct academic search across scholarly databases."""
         # TODO: Implement actual academic search (Issue #3)
-        sources = await self._conduct_comprehensive_search(topic, keywords, max_sources // 2)
+        sources = await self._conduct_comprehensive_search(
+            topic, keywords, max_sources // 2
+        )
 
         # Add mock academic sources
         for i in range(max_sources // 2):
@@ -433,7 +459,9 @@ class DeepResearchServer:
 
         return sources[:max_sources]
 
-    async def _analyze_sources(self, sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    async def _analyze_sources(
+        self, sources: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Analyze source credibility and extract key information."""
         analyzed_sources = []
 
@@ -445,8 +473,10 @@ class DeepResearchServer:
             analyzed_source.update(
                 {
                     "analysis_completed": True,
-                    "bias_score": 0.2 + (hash(source["url"]) % 30) / 100,  # Mock bias score
-                    "relevance_score": 0.7 + (hash(source["title"]) % 30) / 100,  # Mock relevance
+                    "bias_score": 0.2
+                    + (hash(source["url"]) % 30) / 100,  # Mock bias score
+                    "relevance_score": 0.7
+                    + (hash(source["title"]) % 30) / 100,  # Mock relevance
                     "key_points": [
                         f"Key insight 1 from {source['title'][:30]}...",
                         f"Key insight 2 from {source['title'][:30]}...",
@@ -459,7 +489,9 @@ class DeepResearchServer:
 
         return analyzed_sources
 
-    async def _analyze_academic_sources(self, sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    async def _analyze_academic_sources(
+        self, sources: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Analyze academic sources with scholarly metrics."""
         analyzed_sources = await self._analyze_sources(sources)
 
@@ -468,9 +500,12 @@ class DeepResearchServer:
                 # Add academic-specific analysis
                 source.update(
                     {
-                        "impact_factor": 2.5 + (hash(source["url"]) % 20) / 10,  # Mock impact factor
+                        "impact_factor": 2.5
+                        + (hash(source["url"]) % 20) / 10,  # Mock impact factor
                         "h_index": 15 + (hash(source["title"]) % 35),  # Mock h-index
-                        "methodology_quality": ("high" if source.get("citations", 0) > 20 else "moderate"),
+                        "methodology_quality": (
+                            "high" if source.get("citations", 0) > 20 else "moderate"
+                        ),
                         "research_type": "empirical",  # Mock research type
                     }
                 )
@@ -483,9 +518,13 @@ class DeepResearchServer:
         """Synthesize research findings into coherent summary."""
         # TODO: Implement actual synthesis using NLP and AI
 
-        high_quality_sources = [s for s in sources if s.get("credibility_score", 0) > 0.7]
+        high_quality_sources = [
+            s for s in sources if s.get("credibility_score", 0) > 0.7
+        ]
         total_sources = len(sources)
-        quality_ratio = len(high_quality_sources) / total_sources if total_sources > 0 else 0
+        quality_ratio = (
+            len(high_quality_sources) / total_sources if total_sources > 0 else 0
+        )
 
         if depth == "surface":
             summary = (
@@ -549,7 +588,9 @@ class DeepResearchServer:
             },
         }
 
-    async def _synthesize_academic_findings(self, topic: str, sources: list[dict[str, Any]]) -> dict[str, Any]:
+    async def _synthesize_academic_findings(
+        self, topic: str, sources: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Synthesize academic findings with scholarly rigor."""
         result = await self._synthesize_findings(topic, sources, depth="scholarly")
 
@@ -561,12 +602,14 @@ class DeepResearchServer:
                 "academic_sources": len(academic_sources),
                 "total_citations": sum(s.get("citations", 0) for s in academic_sources),
                 "peer_reviewed_ratio": (
-                    len([s for s in academic_sources if s.get("peer_reviewed")]) / len(academic_sources)
+                    len([s for s in academic_sources if s.get("peer_reviewed")])
+                    / len(academic_sources)
                     if academic_sources
                     else 0
                 ),
                 "average_impact_factor": (
-                    sum(s.get("impact_factor", 0) for s in academic_sources) / len(academic_sources)
+                    sum(s.get("impact_factor", 0) for s in academic_sources)
+                    / len(academic_sources)
                     if academic_sources
                     else 0
                 ),
@@ -579,7 +622,9 @@ class DeepResearchServer:
         """Register MCP tools with structured output schemas."""
 
         @self.mcp.tool()
-        async def deep_research(topic: str, scope: str = "comprehensive") -> ResearchResult:
+        async def deep_research(
+            topic: str, scope: str = "comprehensive"
+        ) -> ResearchResult:
             """
             Conduct comprehensive deep research on a given topic.
 
@@ -590,7 +635,9 @@ class DeepResearchServer:
             Returns:
                 Comprehensive research results with structured findings
             """
-            self.logger.info(f"Starting deep research on topic: {topic} (scope: {scope})")
+            self.logger.info(
+                f"Starting deep research on topic: {topic} (scope: {scope})"
+            )
 
             try:
                 # Create session and conduct research
@@ -602,14 +649,17 @@ class DeepResearchServer:
                     session_id=session_data["session_id"],
                     topic=session_data["topic"],
                     scope=session_data["scope"],
-                    executive_summary=session_data["executive_summary"] or "Research completed successfully",
+                    executive_summary=session_data["executive_summary"]
+                    or "Research completed successfully",
                     key_findings=session_data["key_findings"],
                     sources=session_data["sources"],
                     confidence_score=session_data["confidence_score"],
                     metadata={
                         **session_data["metadata"],
-                        "research_started": session_data["created_at"].isoformat() + "Z",
-                        "research_completed": session_data["updated_at"].isoformat() + "Z",
+                        "research_started": session_data["created_at"].isoformat()
+                        + "Z",
+                        "research_completed": session_data["updated_at"].isoformat()
+                        + "Z",
                         "system_version": "0.1.0",
                         "mcp_protocol": self.config.mcp.protocol_version,
                         "status": session_data["status"],
@@ -694,7 +744,9 @@ class DeepResearchServer:
                 )
 
             except Exception as e:
-                self.logger.error(f"Error checking status for session {session_id}: {e}")
+                self.logger.error(
+                    f"Error checking status for session {session_id}: {e}"
+                )
                 return ResearchProgress(
                     session_id=session_id,
                     status="error",
@@ -704,7 +756,9 @@ class DeepResearchServer:
                 )
 
         @self.mcp.tool()
-        async def export_research(session_id: str, format: str = "markdown") -> ExportResult:
+        async def export_research(
+            session_id: str, format: str = "markdown"
+        ) -> ExportResult:
             """
             Export research results in the specified format with resource links.
 
@@ -715,13 +769,17 @@ class DeepResearchServer:
             Returns:
                 Export results with resource links for downloadable content
             """
-            self.logger.info(f"Exporting research for session: {session_id} as {format}")
+            self.logger.info(
+                f"Exporting research for session: {session_id} as {format}"
+            )
 
             try:
                 # Validate format
                 supported_formats = ["markdown", "pdf", "json", "html", "txt"]
                 if format not in supported_formats:
-                    raise ValueError(f"Unsupported format '{format}'. Supported: {supported_formats}")
+                    raise ValueError(
+                        f"Unsupported format '{format}'. Supported: {supported_formats}"
+                    )
 
                 # Get session data
                 session_data = self._sessions.get(session_id)
@@ -729,10 +787,14 @@ class DeepResearchServer:
                     raise ValueError(f"Session {session_id} not found")
 
                 if session_data["status"] != "completed":
-                    raise ValueError(f"Session {session_id} is not completed. Status: {session_data['status']}")
+                    raise ValueError(
+                        f"Session {session_id} is not completed. Status: {session_data['status']}"
+                    )
 
                 # Generate export content
-                export_content = await self._generate_export_content(session_data, format)
+                export_content = await self._generate_export_content(
+                    session_data, format
+                )
 
                 # Calculate estimated file size
                 content_size = len(export_content.encode("utf-8"))
@@ -769,11 +831,14 @@ class DeepResearchServer:
                     format=format,
                     resource_links=[],
                     size="0 B",
-                    expires_at=(datetime.now(UTC) + timedelta(days=1)).isoformat() + "Z",
+                    expires_at=(datetime.now(UTC) + timedelta(days=1)).isoformat()
+                    + "Z",
                 )
 
         @self.mcp.tool()
-        async def get_research_resource(session_id: str, resource_type: str = "report") -> dict[str, Any]:
+        async def get_research_resource(
+            session_id: str, resource_type: str = "report"
+        ) -> dict[str, Any]:
             """
             Retrieve a specific research resource by session ID and type.
 
@@ -785,7 +850,9 @@ class DeepResearchServer:
             Returns:
                 Resource content with metadata and links
             """
-            self.logger.info(f"Retrieving {resource_type} resource for session: {session_id}")
+            self.logger.info(
+                f"Retrieving {resource_type} resource for session: {session_id}"
+            )
 
             # Generate resource URI
             resource_uri = f"research://{session_id}/{resource_type}"
@@ -837,7 +904,9 @@ class DeepResearchServer:
             minutes = int(remaining % 60)
             return f"{hours}h {minutes}m"
 
-    async def _generate_export_content(self, session_data: dict[str, Any], format: str) -> str:
+    async def _generate_export_content(
+        self, session_data: dict[str, Any], format: str
+    ) -> str:
         """Generate export content in specified format."""
         if format == "markdown":
             return await self._generate_markdown(session_data)
@@ -881,7 +950,9 @@ class DeepResearchServer:
             content += f"### Source {i}: {source.get('title', 'Untitled')}\n\n"
             content += f"- **URL**: {source.get('url', 'N/A')}\n"
             content += f"- **Type**: {source.get('type', 'Unknown').title()}\n"
-            content += f"- **Credibility Score**: {source.get('credibility_score', 0):.2f}\n"
+            content += (
+                f"- **Credibility Score**: {source.get('credibility_score', 0):.2f}\n"
+            )
             content += f"- **Published**: {source.get('date_published', 'Unknown')}\n"
 
             if source.get("summary"):
@@ -1155,7 +1226,9 @@ Recommended command: pandoc input.md -o output.pdf --pdf-engine=wkhtmltopdf
 
         # Run the FastMCP server with specified transport
         # The FastMCP framework automatically handles protocol version headers
-        transport = cast(Literal["stdio", "sse", "streamable-http"], self.config.mcp.transport)
+        transport = cast(
+            Literal["stdio", "sse", "streamable-http"], self.config.mcp.transport
+        )
         self.mcp.run(transport=transport)
 
     async def run(self) -> None:
@@ -1166,5 +1239,7 @@ Recommended command: pandoc input.md -o output.pdf --pdf-engine=wkhtmltopdf
         self.logger.info("Structured output support: ENABLED")
 
         # FastMCP async runner - use sync version for compatibility
-        transport = cast(Literal["stdio", "sse", "streamable-http"], self.config.mcp.transport)
+        transport = cast(
+            Literal["stdio", "sse", "streamable-http"], self.config.mcp.transport
+        )
         self.mcp.run(transport=transport)

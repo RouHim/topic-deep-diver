@@ -161,12 +161,16 @@ async def test_keyword_generation():
     server = DeepResearchServer()
 
     # Test basic keyword generation
-    keywords = await server._generate_search_keywords("artificial intelligence", max_keywords=5)
+    keywords = await server._generate_search_keywords(
+        "artificial intelligence", max_keywords=5
+    )
     assert "artificial intelligence" in keywords
     assert len(keywords) <= 5
 
     # Test academic keyword generation
-    academic_keywords = await server._generate_academic_keywords("machine learning", max_keywords=10)
+    academic_keywords = await server._generate_academic_keywords(
+        "machine learning", max_keywords=10
+    )
     assert "machine learning" in academic_keywords
     assert any("study" in keyword for keyword in academic_keywords)
     assert len(academic_keywords) <= 10
@@ -178,20 +182,26 @@ async def test_mock_search_functionality():
     server = DeepResearchServer()
 
     # Test web search
-    sources = await server._conduct_web_search("AI", ["AI", "artificial intelligence"], max_sources=5)
+    sources = await server._conduct_web_search(
+        "AI", ["AI", "artificial intelligence"], max_sources=5
+    )
     assert len(sources) <= 5
     assert all("title" in source for source in sources)
     assert all("url" in source for source in sources)
     assert all("credibility_score" in source for source in sources)
 
     # Test comprehensive search
-    comp_sources = await server._conduct_comprehensive_search("AI", ["AI"], max_sources=15)
+    comp_sources = await server._conduct_comprehensive_search(
+        "AI", ["AI"], max_sources=15
+    )
     assert len(comp_sources) <= 15
     source_types = {source.get("type") for source in comp_sources}
     assert "web" in source_types
 
     # Test academic search
-    academic_sources = await server._conduct_academic_search("AI", ["AI"], max_sources=20)
+    academic_sources = await server._conduct_academic_search(
+        "AI", ["AI"], max_sources=20
+    )
     assert len(academic_sources) <= 20
     academic_types = {source.get("type") for source in academic_sources}
     assert "academic" in academic_types
@@ -239,18 +249,24 @@ async def test_findings_synthesis():
     ]
 
     # Test surface synthesis
-    surface_result = await server._synthesize_findings("AI", mock_sources, depth="surface")
+    surface_result = await server._synthesize_findings(
+        "AI", mock_sources, depth="surface"
+    )
     assert "executive_summary" in surface_result
     assert "key_findings" in surface_result
     assert "confidence_score" in surface_result
     assert isinstance(surface_result["key_findings"], list)
 
     # Test detailed synthesis
-    detailed_result = await server._synthesize_findings("AI", mock_sources, depth="detailed")
+    detailed_result = await server._synthesize_findings(
+        "AI", mock_sources, depth="detailed"
+    )
     assert len(detailed_result["key_findings"]) >= len(surface_result["key_findings"])
 
     # Test scholarly synthesis
-    scholarly_result = await server._synthesize_findings("AI", mock_sources, depth="scholarly")
+    scholarly_result = await server._synthesize_findings(
+        "AI", mock_sources, depth="scholarly"
+    )
     assert "scholarly" in scholarly_result["executive_summary"].lower()
 
 

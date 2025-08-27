@@ -8,7 +8,9 @@ import sys
 from pathlib import Path
 
 
-def setup_logging(log_level: str = "INFO", log_file: Path | None = None, enable_console: bool = True) -> logging.Logger:
+def setup_logging(
+    log_level: str = "INFO", log_file: Path | None = None, enable_console: bool = True
+) -> logging.Logger:
     """
     Set up comprehensive logging for the application.
 
@@ -52,7 +54,9 @@ def setup_logging(log_level: str = "INFO", log_file: Path | None = None, enable_
         log_file.parent.mkdir(parents=True, exist_ok=True)
 
         # Rotating file handler (10MB max, keep 5 backups)
-        file_handler = logging.handlers.RotatingFileHandler(log_file, maxBytes=10 * 1024 * 1024, backupCount=5)  # 10MB
+        file_handler = logging.handlers.RotatingFileHandler(
+            log_file, maxBytes=10 * 1024 * 1024, backupCount=5
+        )  # 10MB
         file_handler.setLevel(numeric_level)
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
