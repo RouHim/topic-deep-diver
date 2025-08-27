@@ -680,40 +680,6 @@ class DeepResearchServer:
                     estimated_completion=f"Error: {str(e)}",
                 )
 
-    async def _estimate_completion_time(self, session_id: str) -> str:
-        """Estimate time remaining for session completion."""
-        session_data = self._sessions.get(session_id)
-        if not session_data:
-            return "Unknown"
-
-        scope_config = session_data["metadata"].get("scope_config", {})
-        total_timeout = scope_config.get("timeout_minutes", 5)
-        current_progress = session_data["progress"]
-
-        if current_progress <= 0:
-            return f"{total_timeout} minutes"
-
-        elapsed = datetime.now(UTC) - session_data["created_at"]
-        elapsed_minutes = elapsed.total_seconds() / 60
-
-        if current_progress >= 1.0:
-            return "Completed"
-
-        if session_data["status"] == "failed":
-            return "Failed"
-
-        estimated_total = elapsed_minutes / current_progress
-        remaining = max(0, estimated_total - elapsed_minutes)
-
-        if remaining < 1:
-            return "< 1 minute"
-        elif remaining < 60:
-            return f"{int(remaining)} minutes"
-        else:
-            hours = int(remaining / 60)
-            minutes = int(remaining % 60)
-            return f"{hours}h {minutes}m"
-
         @self.mcp.tool()
         async def export_research(session_id: str, format: str = "markdown") -> ExportResult:
             """
@@ -782,6 +748,71 @@ class DeepResearchServer:
                     size="0 B",
                     expires_at=(datetime.now(UTC) + timedelta(days=1)).isoformat() + "Z",
                 )
+
+        @self.mcp.tool()
+        async def get_research_resource(session_id: str, resource_type: str = "report") -> dict[str, Any]:
+            """
+            Retrieve a specific research resource by session ID and type.
+
+            Args:
+                session_id: Unique identifier for the research session
+                resource_type: Type of resource - options: report, sources,
+                    metadata, raw_data, citations
+
+            Returns:
+                Resource content with metadata and links
+            """
+            self.logger.info(f"Retrieving {resource_type} resource for session: {session_id}")
+
+            # Generate resource URI
+            resource_uri = f"research://{session_id}/{resource_type}"
+
+            # TODO: Implement actual resource retrieval
+            # For now, return structured resource information
+            return {
+                "session_id": session_id,
+                "resource_type": resource_type,
+                "resource_uri": resource_uri,
+                "content_available": True,
+                "last_updated": datetime.now(UTC).isoformat() + "Z",
+                "size_bytes": 1024 * 50,  # 50KB placeholder
+                "mime_type": self._get_mime_type_for_resource(resource_type),
+                "description": self._get_resource_description(resource_type),
+            }
+
+    async def _estimate_completion_time(self, session_id: str) -> str:
+        """Estimate time remaining for session completion."""
+        session_data = self._sessions.get(session_id)
+        if not session_data:
+            return "Unknown"
+
+        scope_config = session_data["metadata"].get("scope_config", {})
+        total_timeout = scope_config.get("timeout_minutes", 5)
+        current_progress = session_data["progress"]
+
+        if current_progress <= 0:
+            return f"{total_timeout} minutes"
+
+        elapsed = datetime.now(UTC) - session_data["created_at"]
+        elapsed_minutes = elapsed.total_seconds() / 60
+
+        if current_progress >= 1.0:
+            return "Completed"
+
+        if session_data["status"] == "failed":
+            return "Failed"
+
+        estimated_total = elapsed_minutes / current_progress
+        remaining = max(0, estimated_total - elapsed_minutes)
+
+        if remaining < 1:
+            return "< 1 minute"
+        elif remaining < 60:
+            return f"{int(remaining)} minutes"
+        else:
+            hours = int(remaining / 60)
+            minutes = int(remaining % 60)
+            return f"{hours}h {minutes}m"
 
     async def _generate_export_content(self, session_data: dict[str, Any], format: str) -> str:
         """Generate export content in specified format."""
@@ -1069,38 +1100,6 @@ This content is optimized for PDF conversion using tools like pandoc, weasyprint
 Recommended command: pandoc input.md -o output.pdf --pdf-engine=wkhtmltopdf
 -->"""
         return pdf_metadata
-
-        # Add a new tool for accessing research resources
-        @self.mcp.tool()
-        async def get_research_resource(session_id: str, resource_type: str = "report") -> dict[str, Any]:
-            """
-            Retrieve a specific research resource by session ID and type.
-
-            Args:
-                session_id: Unique identifier for the research session
-                resource_type: Type of resource - options: report, sources,
-                    metadata, raw_data, citations
-
-            Returns:
-                Resource content with metadata and links
-            """
-            self.logger.info(f"Retrieving {resource_type} resource for session: {session_id}")
-
-            # Generate resource URI
-            resource_uri = f"research://{session_id}/{resource_type}"
-
-            # TODO: Implement actual resource retrieval
-            # For now, return structured resource information
-            return {
-                "session_id": session_id,
-                "resource_type": resource_type,
-                "resource_uri": resource_uri,
-                "content_available": True,
-                "last_updated": datetime.now(UTC).isoformat() + "Z",
-                "size_bytes": 1024 * 50,  # 50KB placeholder
-                "mime_type": self._get_mime_type_for_resource(resource_type),
-                "description": self._get_resource_description(resource_type),
-            }
 
     def _get_mime_type_for_resource(self, resource_type: str) -> str:
         """Get MIME type for a resource type."""
