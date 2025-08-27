@@ -63,8 +63,19 @@ class DeepResearchServer:
         self.logger = get_logger("server")
         self.config = get_config()
 
-        # Initialize session storage for tracking research progress
+        # Session storage for tracking research progress.
+        # Structure: {session_id: {session_data}}
+        # - session_id (str): Unique identifier for each research session.
+        # - session_data (dict): Arbitrary data associated with the session, including progress, results, etc.
+        # Expiration: Sessions are not automatically expired; cleanup must be handled elsewhere if needed.
+        # Thread safety: Access to session data should be protected using the corresponding lock in _session_locks.
         self._sessions: dict[str, dict[str, Any]] = {}
+
+        # Per-session locks for thread-safe access to session data.
+        # Structure: {session_id: asyncio.Lock}
+        # - session_id (str): Unique identifier for each research session.
+        # - asyncio.Lock: Used to ensure that concurrent access to session data is safe.
+        # Thread safety: Always acquire the lock before reading or writing to _sessions[session_id].
         self._session_locks: dict[str, asyncio.Lock] = {}
 
         # Create FastMCP instance with structured content
