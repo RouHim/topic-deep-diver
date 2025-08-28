@@ -8,13 +8,13 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Any, Literal, cast
 
-# UTC compatibility for Python <3.11
+# UTC timezone compatibility for Python <3.11
 try:
-    from datetime import UTC
+    from datetime import UTC as UTC_TZ
 except ImportError:
     from datetime import timezone
 
-    UTC = timezone.utc
+    UTC_TZ = timezone.utc
 
 from mcp.server import FastMCP
 from pydantic import BaseModel, Field
@@ -56,6 +56,9 @@ class ExportResult(BaseModel):
     resource_links: list[str] = Field(description="Links to exported resources")
     size: str = Field(description="Estimated file size")
     expires_at: str = Field(description="Resource expiration timestamp")
+    error: str | None = Field(
+        default=None, description="Error message if export failed"
+    )
 
 
 class DeepResearchServer:
@@ -102,9 +105,9 @@ class DeepResearchServer:
             "status": "pending",
             "stage": "initializing",
             "progress": 0.0,
-            "created_at": datetime.now(UTC),
-            "updated_at": datetime.now(UTC),
-            "expires_at": datetime.now(UTC) + timedelta(hours=24),
+            "created_at": datetime.now(UTC_TZ),
+            "updated_at": datetime.now(UTC_TZ),
+            "expires_at": datetime.now(UTC_TZ) + timedelta(hours=24),
             "executive_summary": None,
             "key_findings": [],
             "sources": [],
@@ -169,7 +172,7 @@ class DeepResearchServer:
                 if key in session_data:
                     session_data[key] = value
 
-            session_data["updated_at"] = datetime.now(UTC)
+            session_data["updated_at"] = datetime.now(UTC_TZ)
             self.logger.debug(f"Updated session {session_id}: {kwargs}")
 
     async def _conduct_research(self, session_id: str) -> dict[str, Any]:
@@ -206,7 +209,12 @@ class DeepResearchServer:
             return self._sessions[session_id]
 
         except Exception as e:
-            self.logger.error(f"Research failed for session {session_id}: {e}")
+            session_data = self._sessions.get(session_id)
+            scope = session_data.get("scope", "unknown") if session_data else "unknown"
+            stage = session_data.get("stage", "unknown") if session_data else "unknown"
+            self.logger.error(
+                f"Research failed for session {session_id} (scope: {scope}, stage: {stage}): {e}"
+            )
             await self._update_session(
                 session_id, status="failed", stage="failed", error_message=str(e)
             )
@@ -608,7 +616,7 @@ class DeepResearchServer:
                 "high_quality_sources": len(high_quality_sources),
                 "quality_ratio": quality_ratio,
                 "synthesis_depth": depth,
-                "synthesis_date": datetime.now(UTC).isoformat(),
+                "synthesis_date": datetime.now(UTC_TZ).isoformat(),
             },
         }
 
@@ -666,11 +674,15 @@ class DeepResearchServer:
                 return result
 
             except Exception as e:
-                self.logger.error(f"Research failed: {e}")
-                # Return error result
-                session_id = str(uuid.uuid4())
+                self.logger.error(
+                    f"Research failed for topic '{topic}' (scope: {scope}): {e}"
+                )
+                # Return error result with meaningful session ID for tracking
+                error_session_id = (
+                    f"ERROR_{topic.replace(' ', '_')[:20]}_{uuid.uuid4().hex[:8]}"
+                )
                 return ResearchResult(
-                    session_id=session_id,
+                    session_id=error_session_id,
                     topic=topic,
                     scope=scope,
                     executive_summary=f"Research failed due to error: {str(e)}",
@@ -683,7 +695,7 @@ class DeepResearchServer:
                     confidence_score=0.0,
                     metadata={
                         "error": str(e),
-                        "research_started": datetime.now(UTC).isoformat() + "Z",
+                        "research_started": datetime.now(UTC_TZ).isoformat() + "Z",
                         "system_version": "0.1.0",
                         "mcp_protocol": self.config.mcp.protocol_version,
                         "status": "failed",
@@ -719,7 +731,7 @@ class DeepResearchServer:
                         )
 
                     # Check if session is expired
-                    if session_data["expires_at"] < datetime.now(UTC):
+                    if session_data["expires_at"] < datetime.now(UTC_TZ):
                         return ResearchProgress(
                             session_id=session_id,
                             status="expired",
@@ -813,7 +825,9 @@ class DeepResearchServer:
 
                 # Generate resource URIs following MCP 2025-06-18 patterns
                 base_uri = f"research://{session_id}"
-                expires_at = (datetime.now(UTC) + timedelta(days=30)).isoformat() + "Z"
+                expires_at = (
+                    datetime.now(UTC_TZ) + timedelta(days=30)
+                ).isoformat() + "Z"
 
                 return ExportResult(
                     session_id=session_id,
@@ -830,15 +844,18 @@ class DeepResearchServer:
                 )
 
             except Exception as e:
-                self.logger.error(f"Export failed for session {session_id}: {e}")
-                # Return error result
+                self.logger.error(
+                    f"Export failed for session {session_id} (format: {format}): {e}"
+                )
+                # Return error result with error indication
                 return ExportResult(
                     session_id=session_id,
                     format=format,
                     resource_links=[],
                     size="0 B",
-                    expires_at=(datetime.now(UTC) + timedelta(days=1)).isoformat()
+                    expires_at=(datetime.now(UTC_TZ) + timedelta(days=1)).isoformat()
                     + "Z",
+                    error=f"Export failed: {str(e)}",
                 )
 
         @self.mcp.tool()
@@ -870,7 +887,7 @@ class DeepResearchServer:
                 "resource_type": resource_type,
                 "resource_uri": resource_uri,
                 "content_available": True,
-                "last_updated": datetime.now(UTC).isoformat() + "Z",
+                "last_updated": datetime.now(UTC_TZ).isoformat() + "Z",
                 "size_bytes": 1024 * 50,  # 50KB placeholder
                 "mime_type": self._get_mime_type_for_resource(resource_type),
                 "description": self._get_resource_description(resource_type),
@@ -891,7 +908,7 @@ class DeepResearchServer:
             if current_progress <= 0:
                 return f"{total_timeout} minutes"
 
-            elapsed = datetime.now(UTC) - session_data["created_at"]
+            elapsed = datetime.now(UTC_TZ) - session_data["created_at"]
             elapsed_minutes = elapsed.total_seconds() / 60
 
             if current_progress >= 1.0:
@@ -943,8 +960,8 @@ class DeepResearchServer:
 - **Research Scope**: {session_data['scope'].title()}
 - **Status**: {session_data['status'].title()}
 - **Confidence Score**: {session_data['confidence_score']:.2%}
-- **Created**: {session_data['created_at'].strftime('%Y-%m-%d %H:%M:%S UTC')}
-- **Last Updated**: {session_data['updated_at'].strftime('%Y-%m-%d %H:%M:%S UTC')}
+- **Created**: {session_data['created_at'].strftime('%Y-%m-%d %H:%M:%S UTC_TZ')}
+- **Last Updated**: {session_data['updated_at'].strftime('%Y-%m-%d %H:%M:%S UTC_TZ')}
 
 ## Key Findings
 
@@ -972,14 +989,14 @@ class DeepResearchServer:
 
 This research report was generated by Topic Deep Diver, an automated deep research system.
 
-- **Generated**: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}
+- **Generated**: {datetime.now(UTC_TZ).strftime('%Y-%m-%d %H:%M:%S UTC_TZ')}
 - **System Version**: 0.1.0
 - **Research Method**: Automated multi-source analysis
 - **Quality Assurance**: Credibility scoring and bias detection applied
 
 ---
 
-*This report is valid until {(datetime.now(UTC) + timedelta(days=30)).strftime('%Y-%m-%d')}*
+*This report is valid until {(datetime.now(UTC_TZ) + timedelta(days=30)).strftime('%Y-%m-%d')}*
 """
         return content
 
@@ -1005,7 +1022,7 @@ This research report was generated by Topic Deep Diver, an automated deep resear
                 "metadata": session_data.get("metadata", {}),
             },
             "export_info": {
-                "generated_at": datetime.now(UTC).isoformat() + "Z",
+                "generated_at": datetime.now(UTC_TZ).isoformat() + "Z",
                 "format": "json",
                 "system_version": "0.1.0",
             },
@@ -1084,8 +1101,8 @@ This research report was generated by Topic Deep Diver, an automated deep resear
             <li><strong>Session ID:</strong> {session_data['session_id']}</li>
             <li><strong>Research Scope:</strong> {session_data['scope'].title()}</li>
             <li><strong>Status:</strong> {session_data['status'].title()}</li>
-            <li><strong>Created:</strong> {session_data['created_at'].strftime('%Y-%m-%d %H:%M:%S UTC')}</li>
-            <li><strong>Last Updated:</strong> {session_data['updated_at'].strftime('%Y-%m-%d %H:%M:%S UTC')}</li>
+            <li><strong>Created:</strong> {session_data['created_at'].strftime('%Y-%m-%d %H:%M:%S UTC_TZ')}</li>
+            <li><strong>Last Updated:</strong> {session_data['updated_at'].strftime('%Y-%m-%d %H:%M:%S UTC_TZ')}</li>
         </ul>
     </div>
 
@@ -1120,10 +1137,10 @@ This research report was generated by Topic Deep Diver, an automated deep resear
         html_content += f"""    </div>
 
     <div class="footer">
-        <p><strong>Report Generated:</strong> {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
+        <p><strong>Report Generated:</strong> {datetime.now(UTC_TZ).strftime('%Y-%m-%d %H:%M:%S UTC_TZ')}</p>
         <p><strong>System:</strong> Topic Deep Diver v0.1.0</p>
         <p><strong>Method:</strong> Automated multi-source analysis with credibility scoring</p>
-        <p><em>This report is valid until {(datetime.now(UTC) + timedelta(days=30)).strftime('%Y-%m-%d')}</em></p>
+        <p><em>This report is valid until {(datetime.now(UTC_TZ) + timedelta(days=30)).strftime('%Y-%m-%d')}</em></p>
     </div>
 </body>
 </html>"""
@@ -1144,8 +1161,8 @@ Session ID: {session_data['session_id']}
 Research Scope: {session_data['scope'].title()}
 Status: {session_data['status'].title()}
 Confidence Score: {session_data['confidence_score']:.2%}
-Created: {session_data['created_at'].strftime('%Y-%m-%d %H:%M:%S UTC')}
-Last Updated: {session_data['updated_at'].strftime('%Y-%m-%d %H:%M:%S UTC')}
+Created: {session_data['created_at'].strftime('%Y-%m-%d %H:%M:%S UTC_TZ')}
+Last Updated: {session_data['updated_at'].strftime('%Y-%m-%d %H:%M:%S UTC_TZ')}
 
 KEY FINDINGS
 -----------
@@ -1170,12 +1187,12 @@ KEY FINDINGS
 
         content += f"""REPORT INFORMATION
 ------------------
-Generated: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}
+Generated: {datetime.now(UTC_TZ).strftime('%Y-%m-%d %H:%M:%S UTC_TZ')}
 System Version: 0.1.0
 Research Method: Automated multi-source analysis
 Quality Assurance: Credibility scoring and bias detection applied
 
-This report is valid until {(datetime.now(UTC) + timedelta(days=30)).strftime('%Y-%m-%d')}
+This report is valid until {(datetime.now(UTC_TZ) + timedelta(days=30)).strftime('%Y-%m-%d')}
 """
         return content
 
@@ -1192,7 +1209,7 @@ subject: "Automated Research Analysis"
 creator: "Topic Deep Diver v0.1.0"
 producer: "MCP Research Server"
 keywords: "research, analysis, {session_data['scope']}"
-date: "{datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}"
+date: "{datetime.now(UTC_TZ).strftime('%Y-%m-%d %H:%M:%S UTC_TZ')}"
 ---
 {markdown_content}
 

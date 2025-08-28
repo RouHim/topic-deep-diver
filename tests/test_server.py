@@ -6,21 +6,14 @@ from datetime import datetime, timedelta
 
 import pytest
 
-# UTC compatibility for Python <3.11
-try:
-    from datetime import UTC
-except ImportError:
-    from datetime import timezone
-
-    UTC = timezone.utc
-
 from topic_deep_diver.server import DeepResearchServer
+from topic_deep_diver.utils import UTC_TZ
 
 
 @pytest.fixture
 def mock_session_data():
     """Fixture for mock session data used in tests."""
-    now = datetime.now(UTC)
+    now = datetime.now(UTC_TZ)
     return {
         "session_id": "test-123",
         "topic": "AI Research",
