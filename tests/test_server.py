@@ -17,6 +17,36 @@ except ImportError:
 from topic_deep_diver.server import DeepResearchServer
 
 
+@pytest.fixture
+def mock_session_data():
+    """Fixture for mock session data used in tests."""
+    now = datetime.now(UTC)
+    return {
+        "session_id": "test-123",
+        "topic": "AI Research",
+        "scope": "comprehensive",
+        "status": "completed",
+        "stage": "completed",
+        "progress": 1.0,
+        "created_at": now,
+        "updated_at": now + timedelta(hours=1),
+        "expires_at": now + timedelta(days=1),
+        "confidence_score": 0.85,
+        "executive_summary": "Test summary",
+        "key_findings": ["Finding 1", "Finding 2"],
+        "sources": [
+            {
+                "title": "Test Source",
+                "url": "https://example.com",
+                "type": "web",
+                "credibility_score": 0.8,
+                "summary": "Test summary",
+            }
+        ],
+        "metadata": {"test": "data"},
+    }
+
+
 @pytest.mark.asyncio
 async def test_server_initialization():
     """Test that the server initializes correctly."""
@@ -313,61 +343,34 @@ async def test_completion_time_estimation():
 
 
 @pytest.mark.asyncio
-async def test_export_content_generation():
+async def test_export_content_generation(mock_session_data):
     """Test export content generation in different formats."""
     server = DeepResearchServer()
 
-    # Create mock session data
-    now = datetime.now(UTC)
-    mock_session = {
-        "session_id": "test-123",
-        "topic": "AI Research",
-        "scope": "comprehensive",
-        "status": "completed",
-        "stage": "completed",
-        "progress": 1.0,
-        "created_at": now,
-        "updated_at": now + timedelta(hours=1),
-        "expires_at": now + timedelta(days=1),
-        "confidence_score": 0.85,
-        "executive_summary": "Test summary",
-        "key_findings": ["Finding 1", "Finding 2"],
-        "sources": [
-            {
-                "title": "Test Source",
-                "url": "https://example.com",
-                "type": "web",
-                "credibility_score": 0.8,
-                "summary": "Test summary",
-            }
-        ],
-        "metadata": {"test": "data"},
-    }
-
     # Test markdown generation
-    markdown_content = await server._generate_markdown(mock_session)
+    markdown_content = await server._generate_markdown(mock_session_data)
     assert "# Research Report: AI Research" in markdown_content
     assert "Test summary" in markdown_content
     assert "Finding 1" in markdown_content
 
     # Test JSON generation
-    json_content = await server._generate_json(mock_session)
+    json_content = await server._generate_json(mock_session_data)
     assert "test-123" in json_content
     assert "AI Research" in json_content
 
     # Test HTML generation
-    html_content = await server._generate_html(mock_session)
+    html_content = await server._generate_html(mock_session_data)
     assert "<html" in html_content
     assert "AI Research" in html_content
     assert "Test summary" in html_content
 
     # Test text generation
-    text_content = await server._generate_text(mock_session)
+    text_content = await server._generate_text(mock_session_data)
     assert "AI RESEARCH" in text_content
     assert "Test summary" in text_content
 
     # Test PDF generation (placeholder)
-    pdf_content = await server._generate_pdf_placeholder(mock_session)
+    pdf_content = await server._generate_pdf_placeholder(mock_session_data)
     assert "PDF Metadata" in pdf_content
     assert "Research Report - AI Research" in pdf_content
     assert "# Research Report: AI Research" in pdf_content  # Contains markdown

@@ -888,37 +888,39 @@ class DeepResearchServer:
 
     async def _estimate_completion_time(self, session_id: str) -> str:
         """Estimate time remaining for session completion."""
-        session_data = self._sessions.get(session_id)
-        if not session_data:
-            return "Unknown"
+        lock = await self._get_session_lock(session_id)
+        async with lock:
+            session_data = self._sessions.get(session_id)
+            if not session_data:
+                return "Unknown"
 
-        scope_config = session_data["metadata"].get("scope_config", {})
-        total_timeout = scope_config.get("timeout_minutes", 5)
-        current_progress = session_data["progress"]
+            scope_config = session_data["metadata"].get("scope_config", {})
+            total_timeout = scope_config.get("timeout_minutes", 5)
+            current_progress = session_data["progress"]
 
-        if current_progress <= 0:
-            return f"{total_timeout} minutes"
+            if current_progress <= 0:
+                return f"{total_timeout} minutes"
 
-        elapsed = datetime.now(UTC) - session_data["created_at"]
-        elapsed_minutes = elapsed.total_seconds() / 60
+            elapsed = datetime.now(UTC) - session_data["created_at"]
+            elapsed_minutes = elapsed.total_seconds() / 60
 
-        if current_progress >= 1.0:
-            return "Completed"
+            if current_progress >= 1.0:
+                return "Completed"
 
-        if session_data["status"] == "failed":
-            return "Failed"
+            if session_data["status"] == "failed":
+                return "Failed"
 
-        estimated_total = elapsed_minutes / current_progress
-        remaining = max(0, estimated_total - elapsed_minutes)
+            estimated_total = elapsed_minutes / current_progress
+            remaining = max(0, estimated_total - elapsed_minutes)
 
-        if remaining < 1:
-            return "< 1 minute"
-        elif remaining < 60:
-            return f"{int(remaining)} minutes"
-        else:
-            hours = int(remaining / 60)
-            minutes = int(remaining % 60)
-            return f"{hours}h {minutes}m"
+            if remaining < 1:
+                return "< 1 minute"
+            elif remaining < 60:
+                return f"{int(remaining)} minutes"
+            else:
+                hours = int(remaining / 60)
+                minutes = int(remaining % 60)
+                return f"{hours}h {minutes}m"
 
     async def _generate_export_content(
         self, session_data: dict[str, Any], format: str
