@@ -65,20 +65,8 @@ class DeepResearchServer:
         self.logger = get_logger("server")
         self.config = get_config()
 
-        # Session storage for tracking research progress.
-        # Structure: {session_id: {session_data}}
-        # - session_id (str): Unique identifier for each research session.
-        # - session_data (dict): Arbitrary data associated with the session, including progress, results, etc.
-        # Expiration: Sessions have expires_at timestamps and are checked for expiration on access,
-        #             but automatic cleanup/removal must be handled elsewhere if needed.
-        # Thread safety: Access to session data should be protected using the corresponding lock in _session_locks.
+        # Session storage with thread-safe access controls
         self._sessions: dict[str, dict[str, Any]] = {}
-
-        # Per-session locks for thread-safe access to session data.
-        # Structure: {session_id: asyncio.Lock}
-        # - session_id (str): Unique identifier for each research session.
-        # - asyncio.Lock: Used to ensure that concurrent access to session data is safe.
-        # Thread safety: Always acquire the lock before reading or writing to _sessions[session_id].
         self._session_locks: dict[str, asyncio.Lock] = {}
 
         # Create FastMCP instance with structured content
@@ -323,6 +311,36 @@ class DeepResearchServer:
             progress=1.0,
         )
 
+    async def _synthesize_academic_findings(
+        self, topic: str, sources: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """Synthesize academic findings with scholarly rigor."""
+        result = await self._synthesize_findings(topic, sources, depth="scholarly")
+
+        # Add academic-specific metadata
+        academic_sources = [s for s in sources if s.get("type") == "academic"]
+
+        result["synthesis_metadata"].update(
+            {
+                "academic_sources": len(academic_sources),
+                "total_citations": sum(s.get("citations", 0) for s in academic_sources),
+                "peer_reviewed_ratio": (
+                    len([s for s in academic_sources if s.get("peer_reviewed")])
+                    / len(academic_sources)
+                    if academic_sources
+                    else 0
+                ),
+                "average_impact_factor": (
+                    sum(s.get("impact_factor", 0) for s in academic_sources)
+                    / len(academic_sources)
+                    if academic_sources
+                    else 0
+                ),
+            }
+        )
+
+        return result
+
     async def _generate_search_keywords(
         self, topic: str, max_keywords: int = 10
     ) -> list[str]:
@@ -469,18 +487,17 @@ class DeepResearchServer:
         """Analyze source credibility and extract key information."""
         analyzed_sources = []
 
-        for source in sources:
+        for index, source in enumerate(sources):
             # TODO: Implement actual source analysis (bias detection, credibility scoring)
             analyzed_source = source.copy()
 
-            # Add analysis metadata
+            # Add analysis metadata with deterministic scoring
             analyzed_source.update(
                 {
                     "analysis_completed": True,
-                    "bias_score": 0.2
-                    + (hash(source["url"]) % 30) / 100,  # Mock bias score
+                    "bias_score": 0.2 + (index % 30) / 100,  # Deterministic bias score
                     "relevance_score": 0.7
-                    + (hash(source["title"]) % 30) / 100,  # Mock relevance
+                    + ((index * 7) % 30) / 100,  # Deterministic relevance
                     "key_points": [
                         f"Key insight 1 from {source['title'][:30]}...",
                         f"Key insight 2 from {source['title'][:30]}...",
@@ -499,20 +516,23 @@ class DeepResearchServer:
         """Analyze academic sources with scholarly metrics."""
         analyzed_sources = await self._analyze_sources(sources)
 
+        academic_count = 0
         for source in analyzed_sources:
             if source.get("type") == "academic":
-                # Add academic-specific analysis
+                # Add academic-specific analysis with deterministic scoring
                 source.update(
                     {
                         "impact_factor": 2.5
-                        + (hash(source["url"]) % 20) / 10,  # Mock impact factor
-                        "h_index": 15 + (hash(source["title"]) % 35),  # Mock h-index
+                        + (academic_count % 20) / 10,  # Deterministic impact factor
+                        "h_index": 15
+                        + ((academic_count * 3) % 35),  # Deterministic h-index
                         "methodology_quality": (
                             "high" if source.get("citations", 0) > 20 else "moderate"
                         ),
                         "research_type": "empirical",  # Mock research type
                     }
                 )
+                academic_count += 1
 
         return analyzed_sources
 
@@ -591,36 +611,6 @@ class DeepResearchServer:
                 "synthesis_date": datetime.now(UTC).isoformat(),
             },
         }
-
-    async def _synthesize_academic_findings(
-        self, topic: str, sources: list[dict[str, Any]]
-    ) -> dict[str, Any]:
-        """Synthesize academic findings with scholarly rigor."""
-        result = await self._synthesize_findings(topic, sources, depth="scholarly")
-
-        # Add academic-specific metadata
-        academic_sources = [s for s in sources if s.get("type") == "academic"]
-
-        result["synthesis_metadata"].update(
-            {
-                "academic_sources": len(academic_sources),
-                "total_citations": sum(s.get("citations", 0) for s in academic_sources),
-                "peer_reviewed_ratio": (
-                    len([s for s in academic_sources if s.get("peer_reviewed")])
-                    / len(academic_sources)
-                    if academic_sources
-                    else 0
-                ),
-                "average_impact_factor": (
-                    sum(s.get("impact_factor", 0) for s in academic_sources)
-                    / len(academic_sources)
-                    if academic_sources
-                    else 0
-                ),
-            }
-        )
-
-        return result
 
     def _setup_tools(self) -> None:
         """Register MCP tools with structured output schemas."""
@@ -1193,21 +1183,21 @@ This report is valid until {(datetime.now(UTC) + timedelta(days=30)).strftime('%
         """Generate PDF format placeholder (returns markdown for PDF conversion)."""
         markdown_content = await self._generate_markdown(session_data)
 
-        # For now, return markdown with PDF-specific metadata
+        # Return markdown with YAML frontmatter for PDF conversion
         # In a production system, this would use libraries like reportlab or weasyprint
-        pdf_metadata = f"""<!-- PDF Metadata
-Title: Research Report - {session_data['topic']}
-Author: Topic Deep Diver System
-Subject: Automated Research Analysis
-Creator: Topic Deep Diver v0.1.0
-Producer: MCP Research Server
-Keywords: research, analysis, {session_data['scope']}
-Creation Date: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}
--->
-
+        pdf_metadata = f"""---
+title: "Research Report - {session_data['topic']}"
+author: "Topic Deep Diver System"
+subject: "Automated Research Analysis"
+creator: "Topic Deep Diver v0.1.0"
+producer: "MCP Research Server"
+keywords: "research, analysis, {session_data['scope']}"
+date: "{datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}"
+---
 {markdown_content}
 
-<!-- PDF Generation Notes:
+<!--
+PDF Generation Notes:
 This content is optimized for PDF conversion using tools like pandoc, weasyprint, or reportlab.
 Recommended command: pandoc input.md -o output.pdf --pdf-engine=wkhtmltopdf
 -->"""

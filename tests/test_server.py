@@ -371,7 +371,7 @@ async def test_export_content_generation(mock_session_data):
 
     # Test PDF generation (placeholder)
     pdf_content = await server._generate_pdf_placeholder(mock_session_data)
-    assert "PDF Metadata" in pdf_content
+    assert 'title: "Research Report - AI Research"' in pdf_content
     assert "Research Report - AI Research" in pdf_content
     assert "# Research Report: AI Research" in pdf_content  # Contains markdown
     assert "PDF Generation Notes" in pdf_content
