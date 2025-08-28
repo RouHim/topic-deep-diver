@@ -69,7 +69,8 @@ class DeepResearchServer:
         # Structure: {session_id: {session_data}}
         # - session_id (str): Unique identifier for each research session.
         # - session_data (dict): Arbitrary data associated with the session, including progress, results, etc.
-        # Expiration: Sessions are not automatically expired; cleanup must be handled elsewhere if needed.
+        # Expiration: Sessions have expires_at timestamps and are checked for expiration on access,
+        #             but automatic cleanup/removal must be handled elsewhere if needed.
         # Thread safety: Access to session data should be protected using the corresponding lock in _session_locks.
         self._sessions: dict[str, dict[str, Any]] = {}
 
@@ -185,11 +186,14 @@ class DeepResearchServer:
 
     async def _conduct_research(self, session_id: str) -> dict[str, Any]:
         """Conduct the actual research for a session."""
-        session_data = self._sessions.get(session_id)
-        if not session_data:
-            raise ValueError(f"Session {session_id} not found")
+        lock = await self._get_session_lock(session_id)
+        async with lock:
+            session_data = self._sessions.get(session_id)
+            if not session_data:
+                raise ValueError(f"Session {session_id} not found")
 
-        scope = session_data["scope"]
+            # Copy session data needed for research
+            scope = session_data["scope"]
 
         try:
             # Update status to in_progress
@@ -710,36 +714,43 @@ class DeepResearchServer:
             self.logger.info(f"Checking status for session: {session_id}")
 
             try:
-                # Get session data
-                session_data = self._sessions.get(session_id)
+                lock = await self._get_session_lock(session_id)
+                async with lock:
+                    # Get session data
+                    session_data = self._sessions.get(session_id)
 
-                if not session_data:
-                    return ResearchProgress(
-                        session_id=session_id,
-                        status="not_found",
-                        progress=0.0,
-                        stage="unknown",
-                        estimated_completion="Session not found",
-                    )
+                    if not session_data:
+                        return ResearchProgress(
+                            session_id=session_id,
+                            status="not_found",
+                            progress=0.0,
+                            stage="unknown",
+                            estimated_completion="Session not found",
+                        )
 
-                # Check if session is expired
-                if session_data["expires_at"] < datetime.now(UTC):
-                    return ResearchProgress(
-                        session_id=session_id,
-                        status="expired",
-                        progress=session_data.get("progress", 0.0),
-                        stage=session_data.get("stage", "unknown"),
-                        estimated_completion="Session expired",
-                    )
+                    # Check if session is expired
+                    if session_data["expires_at"] < datetime.now(UTC):
+                        return ResearchProgress(
+                            session_id=session_id,
+                            status="expired",
+                            progress=session_data.get("progress", 0.0),
+                            stage=session_data.get("stage", "unknown"),
+                            estimated_completion="Session expired",
+                        )
 
-                # Calculate estimated completion time
+                    # Copy session data for processing outside the lock
+                    status = session_data["status"]
+                    progress = session_data["progress"]
+                    stage = session_data["stage"]
+
+                # Calculate estimated completion time outside the lock
                 estimated_completion = await self._estimate_completion_time(session_id)
 
                 return ResearchProgress(
                     session_id=session_id,
-                    status=session_data["status"],
-                    progress=session_data["progress"],
-                    stage=session_data["stage"],
+                    status=status,
+                    progress=progress,
+                    stage=stage,
                     estimated_completion=estimated_completion,
                 )
 
@@ -781,19 +792,24 @@ class DeepResearchServer:
                         f"Unsupported format '{format}'. Supported: {supported_formats}"
                     )
 
-                # Get session data
-                session_data = self._sessions.get(session_id)
-                if not session_data:
-                    raise ValueError(f"Session {session_id} not found")
+                # Get session data with proper locking
+                lock = await self._get_session_lock(session_id)
+                async with lock:
+                    session_data = self._sessions.get(session_id)
+                    if not session_data:
+                        raise ValueError(f"Session {session_id} not found")
 
-                if session_data["status"] != "completed":
-                    raise ValueError(
-                        f"Session {session_id} is not completed. Status: {session_data['status']}"
-                    )
+                    if session_data["status"] != "completed":
+                        raise ValueError(
+                            f"Session {session_id} is not completed. Status: {session_data['status']}"
+                        )
+
+                    # Copy session data for processing outside the lock
+                    session_data_copy = session_data.copy()
 
                 # Generate export content
                 export_content = await self._generate_export_content(
-                    session_data, format
+                    session_data_copy, format
                 )
 
                 # Calculate estimated file size
