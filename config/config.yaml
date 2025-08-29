@@ -30,5 +30,29 @@ search_engines:
   searxng:
     base_url: "https://search.himmelstein.info"
     enabled: true
+    timeout: 30
+    max_retries: 3
+    default_engines: ["google", "bing", "duckduckgo"]
+    categories:
+      general: ["google", "bing", "duckduckgo"]
+      news: ["google news", "bing news", "reuters"]
+      academic: ["google scholar", "crossref", "semantic scholar"]
+  
+  # Content extraction settings
+  content_extraction:
+    enabled: true
+    timeout: 30
+    max_content_length: 50000
+    extract_images: true
+    extract_links: true
+  
+  # Caching settings
+  cache:
+    enabled: true
+    max_size: 1000
+    default_ttl: 3600  # 1 hour
+    cleanup_interval: 300  # 5 minutes
+    search_results_ttl: 1800  # 30 minutes
+    content_ttl: 21600  # 6 hours
   
   # Additional engines can be configured here
