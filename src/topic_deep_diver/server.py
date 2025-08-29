@@ -76,6 +76,13 @@ class DeepResearchServer:
         )
         self.content_extractor = ContentExtractor()
 
+        # Initialize reusable SearXNG client
+        searx_url = (
+            self.config.search_engines.searxng.base_url
+            or "https://search.himmelstein.info"
+        )
+        self.searxng_client = SearXNGClient(base_url=searx_url)
+
         # Session storage with thread-safe access controls
         self._sessions: dict[str, dict[str, Any]] = {}
         self._session_locks: dict[str, asyncio.Lock] = {}
@@ -409,71 +416,64 @@ class DeepResearchServer:
         self.logger.info(f"Conducting web search for: {topic}")
 
         try:
-            # Initialize search clients
-            searx_url = (
-                self.config.search_engines.searxng.base_url
-                or "https://search.himmelstein.info"
+            # Check cache first
+            cached_results = await self.search_cache.get_search_results(
+                query=topic, search_type="web", keywords=keywords
             )
 
-            async with SearXNGClient(base_url=searx_url) as searx_client:
-                # Check cache first
-                cached_results = await self.search_cache.get_search_results(
-                    query=topic, search_type="web", keywords=keywords
+            if cached_results:
+                self.logger.info("Using cached web search results")
+                # Ensure we return the correct type
+                return (
+                    cached_results[:max_sources]
+                    if isinstance(cached_results, list)
+                    else []
                 )
 
-                if cached_results:
-                    self.logger.info("Using cached web search results")
-                    # Ensure we return the correct type
-                    return (
-                        cached_results[:max_sources]
-                        if isinstance(cached_results, list)
-                        else []
-                    )
+            # Perform actual search using reusable client
+            search_response = await self.searxng_client.search(
+                query=topic,
+                categories=["general"],
+                results_count=max_sources,
+                safesearch=1,
+            )
 
-                # Perform actual search
-                search_response = await searx_client.search(
-                    query=topic,
-                    categories=["general"],
-                    results_count=max_sources,
-                    safesearch=1,
-                )
+            # Convert search results to our format
+            sources = []
+            for result in search_response.results[:max_sources]:
+                source = {
+                    "title": result.title,
+                    "url": result.url,
+                    "type": "web",
+                    "summary": (
+                        result.content[:200] + "..."
+                        if len(result.content) > 200
+                        else result.content
+                    ),
+                    "credibility_score": min(
+                        0.9, max(0.3, result.score / 10.0)
+                    ),  # Normalize score
+                    "date_published": result.published_date or "Unknown",
+                    "source_quality": self._assess_source_quality(
+                        result.url, result.score
+                    ),
+                    "content_length": len(result.content),
+                    "search_engine": result.source_engine,
+                    "search_score": result.score,
+                }
+                sources.append(source)
 
-                # Convert search results to our format
-                sources = []
-                for result in search_response.results[:max_sources]:
-                    source = {
-                        "title": result.title,
-                        "url": result.url,
-                        "type": "web",
-                        "summary": (
-                            result.content[:200] + "..."
-                            if len(result.content) > 200
-                            else result.content
-                        ),
-                        "credibility_score": min(
-                            0.9, max(0.3, result.score / 10.0)
-                        ),  # Normalize score
-                        "date_published": result.published_date or "Unknown",
-                        "source_quality": self._assess_source_quality(
-                            result.url, result.score
-                        ),
-                        "content_length": len(result.content),
-                        "search_engine": result.source_engine,
-                        "search_score": result.score,
-                    }
-                    sources.append(source)
+            # Cache results for future use
+            await self.search_cache.set_search_results(
+                query=topic,
+                results=sources,
+                search_type="web",
+                keywords=keywords,
+                ttl=1800,  # 30 minutes
+            )
 
-                # Cache results for future use
-                await self.search_cache.set_search_results(
-                    query=topic,
-                    results=sources,
-                    search_type="web",
-                    keywords=keywords,
-                    ttl=1800,  # 30 minutes
-                )
-
-                self.logger.info(f"Web search completed: {len(sources)} sources found")
-                return sources
+            self.logger.info(f"Web search completed: {len(sources)} sources found")
+            return sources
 
         except Exception as e:
             self.logger.error(f"Web search failed: {e}")
@@ -608,41 +608,34 @@ class DeepResearchServer:
     ) -> list[dict[str, Any]]:
         """Conduct news-specific search."""
         try:
-            searx_url = getattr(
-                self.config.search_engines,
-                "searxng_url",
-                "https://search.himmelstein.info",
+            # Search for news with time filter using reusable client
+            search_response = await self.searxng_client.search_news(
+                query=topic, time_range="week", results_count=max_sources
             )
 
-            async with SearXNGClient(base_url=searx_url) as searx_client:
-                # Search for news with time filter
-                search_response = await searx_client.search_news(
-                    query=topic, time_range="week", results_count=max_sources
-                )
+            sources = []
+            for result in search_response.results[:max_sources]:
+                source = {
+                    "title": result.title,
+                    "url": result.url,
+                    "type": "news",
+                    "summary": (
+                        result.content[:200] + "..."
+                        if len(result.content) > 200
+                        else result.content
+                    ),
+                    "credibility_score": min(0.9, max(0.5, result.score / 10.0)),
+                    "date_published": result.published_date or "Recent",
+                    "source_quality": self._assess_source_quality(
+                        result.url, result.score
+                    ),
+                    "content_length": len(result.content),
+                    "search_engine": result.source_engine,
+                    "search_score": result.score,
+                }
+                sources.append(source)
 
-                sources = []
-                for result in search_response.results[:max_sources]:
-                    source = {
-                        "title": result.title,
-                        "url": result.url,
-                        "type": "news",
-                        "summary": (
-                            result.content[:200] + "..."
-                            if len(result.content) > 200
-                            else result.content
-                        ),
-                        "credibility_score": min(0.9, max(0.5, result.score / 10.0)),
-                        "date_published": result.published_date or "Recent",
-                        "source_quality": self._assess_source_quality(
-                            result.url, result.score
-                        ),
-                        "content_length": len(result.content),
-                        "search_engine": result.source_engine,
-                        "search_score": result.score,
-                    }
-                    sources.append(source)
-
-                return sources
+            return sources
 
         except Exception as e:
             self.logger.warning(f"News search failed: {e}")
@@ -653,57 +646,51 @@ class DeepResearchServer:
     ) -> list[dict[str, Any]]:
         """Conduct blog/forum specific search."""
         try:
-            searx_url = getattr(
-                self.config.search_engines,
-                "searxng_url",
-                "https://search.himmelstein.info",
-            )
-
             # Add blog-specific keywords
             blog_query = f"{topic} blog OR forum OR discussion OR analysis"
 
-            async with SearXNGClient(base_url=searx_url) as searx_client:
-                search_response = await searx_client.search(
-                    query=blog_query, categories=["general"], results_count=max_sources
-                )
+            # Search using reusable client
+            search_response = await self.searxng_client.search(
+                query=blog_query, categories=["general"], results_count=max_sources
+            )
 
-                sources = []
-                for result in search_response.results[:max_sources]:
-                    # Filter for blog-like content
-                    url_lower = result.url.lower()
-                    if any(
-                        indicator in url_lower
-                        for indicator in [
-                            "blog",
-                            "medium.com",
-                            "substack",
-                            "forum",
-                            "discussion",
-                        ]
-                    ):
-                        source = {
-                            "title": result.title,
-                            "url": result.url,
-                            "type": "blog",
-                            "summary": (
-                                result.content[:200] + "..."
-                                if len(result.content) > 200
-                                else result.content
-                            ),
-                            "credibility_score": min(
-                                0.8, max(0.4, result.score / 10.0)
-                            ),
-                            "date_published": result.published_date or "Unknown",
-                            "source_quality": self._assess_source_quality(
-                                result.url, result.score
-                            ),
-                            "content_length": len(result.content),
-                            "search_engine": result.source_engine,
-                            "search_score": result.score,
-                        }
-                        sources.append(source)
+            sources = []
+            for result in search_response.results[:max_sources]:
+                # Filter for blog-like content
+                url_lower = result.url.lower()
+                if any(
+                    indicator in url_lower
+                    for indicator in [
+                        "blog",
+                        "medium.com",
+                        "substack",
+                        "forum",
+                        "discussion",
+                    ]
+                ):
+                    source = {
+                        "title": result.title,
+                        "url": result.url,
+                        "type": "blog",
+                        "summary": (
+                            result.content[:200] + "..."
+                            if len(result.content) > 200
+                            else result.content
+                        ),
+                        "credibility_score": min(
+                            0.8, max(0.4, result.score / 10.0)
+                        ),
+                        "date_published": result.published_date or "Unknown",
+                        "source_quality": self._assess_source_quality(
+                            result.url, result.score
+                        ),
+                        "content_length": len(result.content),
+                        "search_engine": result.source_engine,
+                        "search_score": result.score,
+                    }
+                    sources.append(source)
 
-                return sources
+            return sources
 
         except Exception as e:
             self.logger.warning(f"Blog search failed: {e}")
@@ -791,62 +778,55 @@ class DeepResearchServer:
     ) -> list[dict[str, Any]]:
         """Conduct search specifically for scholarly content."""
         try:
-            searx_url = getattr(
-                self.config.search_engines,
-                "searxng_url",
-                "https://search.himmelstein.info",
+            # Use academic search method with reusable client
+            search_response = await self.searxng_client.search_academic(
+                query=topic, results_count=max_sources
             )
 
-            async with SearXNGClient(base_url=searx_url) as searx_client:
-                # Use academic search method
-                search_response = await searx_client.search_academic(
-                    query=topic, results_count=max_sources
+            sources = []
+            for result in search_response.results[:max_sources]:
+                # Check if this looks like academic content
+                is_academic = any(
+                    indicator in result.url.lower()
+                    for indicator in [
+                        "scholar",
+                        "arxiv",
+                        "pubmed",
+                        "doi",
+                        "ieee",
+                        "acm",
+                        ".edu",
+                    ]
                 )
 
-                sources = []
-                for result in search_response.results[:max_sources]:
-                    # Check if this looks like academic content
-                    is_academic = any(
-                        indicator in result.url.lower()
-                        for indicator in [
-                            "scholar",
-                            "arxiv",
-                            "pubmed",
-                            "doi",
-                            "ieee",
-                            "acm",
-                            ".edu",
-                        ]
-                    )
+                source = {
+                    "title": result.title,
+                    "url": result.url,
+                    "type": "academic",
+                    "summary": (
+                        result.content[:200] + "..."
+                        if len(result.content) > 200
+                        else result.content
+                    ),
+                    "credibility_score": min(0.95, max(0.7, result.score / 10.0)),
+                    "date_published": result.published_date or "Unknown",
+                    "source_quality": (
+                        "high"
+                        if is_academic
+                        else self._assess_source_quality(result.url, result.score)
+                    ),
+                    "content_length": len(result.content),
+                    "search_engine": result.source_engine,
+                    "search_score": result.score,
+                    "peer_reviewed": is_academic,
+                    "citations": None,  # Would need additional API calls to get
+                    "journal": None,  # Would need content extraction
+                    "authors": None,  # Would need content extraction
+                    "doi": None,  # Would need content extraction
+                }
+                sources.append(source)
 
-                    source = {
-                        "title": result.title,
-                        "url": result.url,
-                        "type": "academic",
-                        "summary": (
-                            result.content[:200] + "..."
-                            if len(result.content) > 200
-                            else result.content
-                        ),
-                        "credibility_score": min(0.95, max(0.7, result.score / 10.0)),
-                        "date_published": result.published_date or "Unknown",
-                        "source_quality": (
-                            "high"
-                            if is_academic
-                            else self._assess_source_quality(result.url, result.score)
-                        ),
-                        "content_length": len(result.content),
-                        "search_engine": result.source_engine,
-                        "search_score": result.score,
-                        "peer_reviewed": is_academic,
-                        "citations": None,  # Would need additional API calls to get
-                        "journal": None,  # Would need content extraction
-                        "authors": None,  # Would need content extraction
-                        "doi": None,  # Would need content extraction
-                    }
-                    sources.append(source)
-
-                return sources
+            return sources
 
         except Exception as e:
             self.logger.warning(f"Scholarly search failed: {e}")
