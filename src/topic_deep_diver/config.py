@@ -44,12 +44,40 @@ class SearchEngineConfig(BaseModel):
     enabled: bool = True
     timeout: int = 30
     max_results: int = 20
+    max_retries: int = 3
+    default_engines: list[str] = Field(default_factory=list)
+    categories: dict[str, list[str]] = Field(default_factory=dict)
+
+
+class ContentExtractionConfig(BaseModel):
+    """Content extraction configuration."""
+
+    enabled: bool = True
+    timeout: int = 30
+    max_content_length: int = 50000
+    extract_images: bool = True
+    extract_links: bool = True
+
+
+class CacheConfig(BaseModel):
+    """Cache configuration."""
+
+    enabled: bool = True
+    max_size: int = 1000
+    default_ttl: int = 3600
+    cleanup_interval: int = 300
+    search_results_ttl: int = 1800
+    content_ttl: int = 21600
 
 
 class SearchEnginesConfig(BaseModel):
     """All search engines configuration."""
 
     searxng: SearchEngineConfig = Field(default_factory=SearchEngineConfig)
+    content_extraction: ContentExtractionConfig = Field(
+        default_factory=ContentExtractionConfig
+    )
+    cache: CacheConfig = Field(default_factory=CacheConfig)
 
 
 class Configuration(BaseModel):
