@@ -65,7 +65,7 @@ class SearchCache:
         """Generate cache key from arguments."""
 
         # Create a deterministic string from arguments
-        key_data = {"args": args, "kwargs": sorted(kwargs.items()) if kwargs else {}}
+        key_data = {"args": args, "kwargs": sorted(kwargs.items()) if kwargs else []}
 
         # Convert to JSON and hash
         json_str = json.dumps(key_data, sort_keys=True, default=str)

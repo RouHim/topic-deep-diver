@@ -2,6 +2,7 @@
 
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
@@ -70,7 +71,7 @@ class ContentExtractor:
 
         # Compile metadata
         metadata = {
-            "processed_at": "timestamp",
+            "processed_at": datetime.now().isoformat(),
             "domain": urlparse(url).netloc,
             "content_length": len(html_content),
             "text_length": len(text_content),

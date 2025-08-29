@@ -70,7 +70,10 @@ class DeepResearchServer:
         self.config = get_config()
 
         # Initialize search components
-        self.search_cache = SearchCache(max_size=1000, default_ttl=3600)
+        cache_config = self.config.search_engines.cache
+        self.search_cache = SearchCache(
+            max_size=cache_config.max_size, default_ttl=cache_config.default_ttl
+        )
         self.content_extractor = ContentExtractor()
 
         # Session storage with thread-safe access controls
@@ -407,10 +410,9 @@ class DeepResearchServer:
 
         try:
             # Initialize search clients
-            searx_url = getattr(
-                self.config.search_engines,
-                "searxng_url",
-                "https://search.himmelstein.info",
+            searx_url = (
+                self.config.search_engines.searxng.base_url
+                or "https://search.himmelstein.info"
             )
 
             async with SearXNGClient(base_url=searx_url) as searx_client:

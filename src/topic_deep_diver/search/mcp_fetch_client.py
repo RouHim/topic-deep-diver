@@ -2,8 +2,14 @@
 
 import asyncio
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 from urllib.parse import urlparse
+
+try:
+    import httpx
+except ImportError:
+    httpx = None  # type: ignore[assignment]
 
 from ..logging_config import get_logger
 
@@ -47,8 +53,10 @@ class MCPFetchClient:
         extraction_start = asyncio.get_event_loop().time()
 
         try:
-            # Import httpx here to avoid dependency issues if not installed
-            import httpx
+            if httpx is None:
+                raise ImportError(
+                    "httpx is not installed. Please install it to use content extraction."
+                )
 
             logger.info(f"Extracting content from: {url}")
 
