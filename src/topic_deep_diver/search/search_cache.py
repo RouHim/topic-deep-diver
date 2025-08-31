@@ -68,6 +68,7 @@ class SearchCache:
         key_data = {"args": args, "kwargs": sorted(kwargs.items()) if kwargs else []}
 
         # Convert to JSON and hash
+        json_str = json.dumps(key_data, sort_keys=True, default=str)
         return hashlib.sha256(json_str.encode()).hexdigest()
 
     async def get(self, key: str) -> Any | None:

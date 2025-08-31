@@ -89,9 +89,8 @@ class SearXNGClient:
         params: dict[str, str | int] = {
             "q": query,
             "format": "json",
-            "safesearch": str(
-                safesearch
-            ),  # SearXNG API expects 'safesearch' as a string
+            # SearXNG API expects 'safesearch' as a string
+            "safesearch": str(safesearch),
         }
 
         if categories:
