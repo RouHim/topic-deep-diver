@@ -352,7 +352,7 @@ class ContentExtractor:
             r"javascript:",  # JavaScript links
             r"mailto:",  # Email links
             r"tel:",  # Phone links
-            r"\.pdf$",  # PDF files (for now)
+            r"\.pdf$",  # PDF files. TODO: Revisit if PDF content extraction is supported or needed.
             r"\.jpg$|\.png$|\.gif$|\.jpeg$",  # Image files
         ]
 
