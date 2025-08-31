@@ -20,6 +20,7 @@ except ImportError:
 from mcp.server import FastMCP
 from pydantic import BaseModel, Field
 
+from .planning.planner import QueryPlanner
 from .config import get_config
 from .logging_config import get_logger
 from .search import ContentExtractor, SearchCache, SearXNGClient
