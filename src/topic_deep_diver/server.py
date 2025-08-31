@@ -410,7 +410,7 @@ class DeepResearchServer:
         return keywords[:max_keywords]
 
     async def _conduct_web_search(
-        self, topic: str, keywords: list[str], max_sources: int = 20
+        self, topic: str, keywords: list[str], max_sources: int = 10
     ) -> list[dict[str, Any]]:
         """Conduct web search using SearXNG integration."""
         self.logger.info(f"Conducting web search for: {topic}")

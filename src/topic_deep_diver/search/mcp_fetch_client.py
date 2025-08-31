@@ -96,12 +96,6 @@ class MCPFetchClient:
                     success=True,
                 )
 
-        except ImportError:
-            logger.error("httpx not available for content extraction")
-            return self._create_error_result(
-                url, "httpx dependency not available", extraction_start
-            )
-
         except Exception as e:
             logger.error(f"Failed to extract content from {url}: {e}")
             return self._create_error_result(url, str(e), extraction_start)
