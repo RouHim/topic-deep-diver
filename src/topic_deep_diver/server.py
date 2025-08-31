@@ -79,10 +79,7 @@ class DeepResearchServer:
         self.content_extractor = ContentExtractor()
 
         # Initialize reusable SearXNG client
-        searx_url = (
-            self.config.search_engines.searxng.base_url
-            or "https://search.himmelstein.info"
-        )
+        searx_url = self.config.search_engines.searxng.base_url
         self.searxng_client = SearXNGClient(base_url=searx_url)
 
         # Session storage with thread-safe access controls

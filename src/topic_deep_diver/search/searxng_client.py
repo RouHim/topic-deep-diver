@@ -89,7 +89,9 @@ class SearXNGClient:
         params: dict[str, str | int] = {
             "q": query,
             "format": "json",
-            # SearXNG API expects 'safesearch' as a string
+            # SearXNG API expects 'safesearch' as a string.
+            # Valid values are "0" (off), "1" (moderate), and "2" (strict).
+            # We convert the integer input to string to match the API requirements.
             "safesearch": str(safesearch),
         }
 

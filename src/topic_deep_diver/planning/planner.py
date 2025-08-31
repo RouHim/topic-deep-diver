@@ -1,5 +1,5 @@
-from topic_deep_diver.planning.decomposer import TopicDecomposer
-from topic_deep_diver.planning.models import ResearchPlan
+from .decomposer import TopicDecomposer
+from .models import ResearchPlan
 
 
 class QueryPlanner:

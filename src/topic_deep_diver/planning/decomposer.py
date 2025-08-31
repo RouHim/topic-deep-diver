@@ -1,6 +1,8 @@
-import spacy
 from typing import List
-from .models import SubQuestion, SearchStep
+
+import spacy
+
+from .models import SearchStep, SubQuestion
 
 class TopicDecomposer:
     """
@@ -11,11 +13,11 @@ class TopicDecomposer:
         try:
             self.nlp = spacy.load("en_core_web_sm")
         except OSError:
-            # This is a fallback for environments where the model isn't downloaded
-            # In a production setup, the model should be pre-installed.
-            from spacy.cli import download
-            download("en_core_web_sm")
-            self.nlp = spacy.load("en_core_web_sm")
+            # The model isn't installed. In a production setup, the model should be pre-installed.
+            raise RuntimeError(
+                "spaCy model 'en_core_web_sm' is not installed. "
+                "Please install it by running: python -m spacy download en_core_web_sm"
+            )
 
     def decompose(self, topic: str) -> List[SubQuestion]:
         """
