@@ -677,9 +677,7 @@ class DeepResearchServer:
                             if len(result.content) > 200
                             else result.content
                         ),
-                        "credibility_score": min(
-                            0.8, max(0.4, result.score / 10.0)
-                        ),
+                        "credibility_score": min(0.8, max(0.4, result.score / 10.0)),
                         "date_published": result.published_date or "Unknown",
                         "source_quality": self._assess_source_quality(
                             result.url, result.score
