@@ -17,6 +17,12 @@ from .models import (
 
 logger = get_logger(__name__)
 
+# Constants for time and result limits
+MIN_TIME_LIMIT_SECONDS = 30
+MAX_TIME_LIMIT_SECONDS = 300
+MIN_RESULTS = 5
+MAX_RESULTS = 50
+
 
 class StrategyPlanner:
     """Plans and optimizes search strategies for research queries."""
@@ -309,7 +315,7 @@ class StrategyPlanner:
         max_results = int(base_results * importance_multiplier)
 
         # Ensure reasonable bounds
-        return max(5, min(max_results, 50))
+        return max(MIN_RESULTS, min(max_results, MAX_RESULTS))
 
     def _calculate_time_limit(
         self, sub_question: SubQuestion, scope_config: ScopeConfig
@@ -331,7 +337,7 @@ class StrategyPlanner:
         importance_multiplier = 0.7 + (sub_question.importance_score * 0.3)
         time_limit = int(base_time * importance_multiplier)
 
-        return max(30, min(time_limit, 300))  # 30s to 5min
+        return max(MIN_TIME_LIMIT_SECONDS, min(time_limit, MAX_TIME_LIMIT_SECONDS))
 
     def _create_search_filters(
         self, sub_question: SubQuestion, analysis: QueryAnalysis
@@ -372,19 +378,13 @@ class StrategyPlanner:
             sub_questions: List of sub-questions
 
         Returns:
-            List of question IDs in execution order
+            List of question identifiers in execution order
         """
         # Simple priority ordering based on importance score
         # In a more complex implementation, this would consider dependencies
         ordered = sorted(sub_questions, key=lambda q: q.importance_score, reverse=True)
 
-        # Return stable identifiers based on original question order
-        # Use question ID if available, otherwise use question text
-        return [
-            (
-                str(getattr(q, "id", q.question))
-                if getattr(q, "id", None) is not None
-                else q.question
-            )
-            for q in ordered
-        ]
+        # Return stable identifiers using question index in original list
+        # This ensures consistent ordering even if questions are reordered
+        question_to_index = {q.question: i for i, q in enumerate(sub_questions)}
+        return [f"q_{question_to_index[q.question]}" for q in ordered]

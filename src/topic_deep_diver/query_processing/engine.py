@@ -12,6 +12,10 @@ from .taxonomy_generator import TaxonomyGenerator
 
 logger = get_logger(__name__)
 
+# Constants for source estimation bounds
+MIN_ESTIMATED_SOURCES = 5
+MAX_ESTIMATED_SOURCES = 100
+
 
 class QueryProcessingEngine:
     """Main engine for processing and analyzing research queries."""
@@ -22,7 +26,10 @@ class QueryProcessingEngine:
         self.strategy_planner = StrategyPlanner()
 
     async def process_query(
-        self, topic: str, scope: ResearchScope = ResearchScope.COMPREHENSIVE
+        self,
+        topic: str,
+        scope: ResearchScope = ResearchScope.COMPREHENSIVE,
+        use_taxonomy: bool = False,
     ) -> QueryPlan:
         """
         Process a research topic and generate a complete query plan.
@@ -30,6 +37,7 @@ class QueryProcessingEngine:
         Args:
             topic: Research topic to process
             scope: Research scope (quick, comprehensive, academic)
+            use_taxonomy: Whether to generate full taxonomy (can be expensive)
 
         Returns:
             Complete query plan with analysis and strategies
@@ -43,8 +51,10 @@ class QueryProcessingEngine:
             # Step 1: Analyze the topic
             analysis = await self._analyze_topic(topic)
 
-            # Step 2: Generate taxonomy (optional for future enhancements)
-            # taxonomy = self.taxonomy_generator.generate_taxonomy(analysis)  # Uncomment when needed
+            # Step 2: Generate taxonomy (optional for performance)
+            if use_taxonomy:
+                taxonomy = self.taxonomy_generator.generate_taxonomy(analysis)
+                logger.debug(f"Generated taxonomy with {len(taxonomy)} nodes")
 
             # Step 3: Create query plan
             plan = self.strategy_planner.create_query_plan(topic, scope, analysis)
@@ -187,7 +197,7 @@ class QueryProcessingEngine:
         estimated = int(base_sources * complexity_multiplier * subquestion_multiplier)
 
         # Reasonable bounds
-        return max(5, min(estimated, 100))
+        return max(MIN_ESTIMATED_SOURCES, min(estimated, MAX_ESTIMATED_SOURCES))
 
     async def refine_plan(
         self, plan: QueryPlan, feedback: dict | None = None

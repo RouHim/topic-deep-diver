@@ -20,7 +20,7 @@ class NLPProcessor:
     """Handles natural language processing tasks for query analysis."""
 
     def __init__(self) -> None:
-        self.nlp: Any = None  # spaCy Language model
+        self.nlp: Any | None = None  # spaCy Language model
         self.lemmatizer = WordNetLemmatizer()
         self._ensure_nltk_data()
 
@@ -36,7 +36,7 @@ class NLPProcessor:
             nltk.download("stopwords", quiet=True)
             nltk.download("wordnet", quiet=True)
 
-    def initialize_spacy(self) -> Any:
+    def initialize_spacy(self) -> Any | None:
         """Initialize spaCy model if not already loaded."""
         if self.nlp is None:
             try:
@@ -247,19 +247,47 @@ class NLPProcessor:
                 c for c in concepts if len(c.split()) <= 3 and len(c) > 3
             ][:5]
 
+            # Enhanced question templates for different concept types
             question_templates = [
+                # Definition and explanation
                 "What is {concept}?",
+                "What does {concept} mean?",
+                "Can you explain {concept}?",
+                # Functionality and operation
                 "How does {concept} work?",
+                "How is {concept} implemented?",
+                "What is the process of {concept}?",
+                # Benefits and advantages
                 "What are the benefits of {concept}?",
+                "What are the advantages of using {concept}?",
+                "Why is {concept} important?",
+                # Challenges and limitations
                 "What are the challenges with {concept}?",
+                "What are the limitations of {concept}?",
+                "What problems does {concept} solve?",
+                # Application and usage
                 "How is {concept} used in practice?",
+                "What are real-world applications of {concept}?",
+                "How can {concept} be applied?",
+                # Comparison and context
+                "How does {concept} compare to similar approaches?",
+                "What is the context of {concept}?",
+                "What are alternatives to {concept}?",
             ]
 
             for concept in filtered_concepts:
-                # Use different templates for variety
-                template_index = hash(concept) % len(question_templates)
-                questions.append(
-                    question_templates[template_index].format(concept=concept)
-                )
+                # Use different templates for variety based on concept characteristics
+                if len(concept.split()) == 1:
+                    # Single word concepts - use definition/explanation templates
+                    template_pool = question_templates[:6]
+                elif "system" in concept.lower() or "process" in concept.lower():
+                    # Process/system concepts - use functionality templates
+                    template_pool = question_templates[3:9]
+                else:
+                    # General concepts - use all templates
+                    template_pool = question_templates
+
+                template_index = hash(concept) % len(template_pool)
+                questions.append(template_pool[template_index].format(concept=concept))
 
         return questions[:10]  # Limit to 10 sub-questions

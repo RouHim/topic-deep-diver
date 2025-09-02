@@ -20,9 +20,15 @@ except ImportError:
 from mcp.server import FastMCP
 from pydantic import BaseModel, Field
 
+# Import local modules
 from .config import get_config
 from .logging_config import get_logger
-from .search import ContentExtractor, SearchCache, SearXNGClient
+from .search.content_extractor import ContentExtractor
+from .search.search_cache import SearchCache
+from .search.searxng_client import SearXNGClient
+
+# Constants for search configuration
+MIN_SOURCE_TYPES = 2
 
 
 class ResearchProgress(BaseModel):
@@ -424,10 +430,9 @@ class DeepResearchServer:
             if cached_results:
                 self.logger.info("Using cached web search results")
                 # Ensure we return the correct type
-                if isinstance(cached_results, list):
-                    return cached_results[:max_sources]
-                else:
+                if not isinstance(cached_results, list):
                     return []
+                return cached_results[:max_sources]
 
             # Perform actual search using reusable client
             search_response = await self.searxng_client.search(
@@ -473,14 +478,14 @@ class DeepResearchServer:
                 )
                 self.logger.info(f"Web search completed: {len(sources)} sources found")
                 return sources
-            else:
-                # No results from search, fall back to mock data
-                self.logger.warning("Web search returned no results, using mock data")
-                mock_sources = await self._generate_mock_web_sources(
-                    topic, keywords, max_sources
-                )
-                self.logger.info(f"Generated {len(mock_sources)} mock sources")
-                return mock_sources
+
+            # No results from search, fall back to mock data
+            self.logger.warning("Web search returned no results, using mock data")
+            mock_sources = await self._generate_mock_web_sources(
+                topic, keywords, max_sources
+            )
+            self.logger.info(f"Generated {len(mock_sources)} mock sources")
+            return mock_sources
 
         except Exception as e:
             self.logger.error(f"Web search failed: {e}")
@@ -600,7 +605,10 @@ class DeepResearchServer:
             source_types = {source.get("type") for source in unique_sources}
             min_required_sources = max(3, max_sources // 3)  # At least 1/3 of requested
 
-            if len(unique_sources) >= min_required_sources and len(source_types) >= 2:
+            if (
+                len(unique_sources) >= min_required_sources
+                and len(source_types) >= MIN_SOURCE_TYPES
+            ):
                 self.logger.info(
                     f"Comprehensive search completed: {len(unique_sources)} unique sources "
                     f"with types: {source_types}"
