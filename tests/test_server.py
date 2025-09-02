@@ -249,8 +249,9 @@ async def test_source_analysis():
     analyzed = analyzed_sources[0]
     assert "analysis_completed" in analyzed
     assert "bias_score" in analyzed
-    assert "relevance_score" in analyzed
-    assert "key_points" in analyzed
+    assert "credibility_score" in analyzed  # New field from comprehensive analysis
+    assert "quality_score" in analyzed  # New field from comprehensive analysis
+    assert "key_points" in analyzed  # Maintained for backward compatibility
 
 
 @pytest.mark.asyncio

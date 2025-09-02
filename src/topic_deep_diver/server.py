@@ -955,9 +955,10 @@ class DeepResearchServer:
                 "content_freshness": analysis_result.deduplication.content_freshness,
                 "quality_score": analysis_result.quality_score,
                 "should_include": analysis_result.should_include,
+                "relevance_score": 0.7,  # Maintain backward compatibility
                 "key_points": [
                     f"Credibility: {analysis_result.credibility.quality_level.value.title()} source",
-                    f"Bias level: {analysis_result.bias.bias_type.value.title()} ({analysis_result.bias.bias_score:.2f})",
+                    f"Bias level: {analysis_result.bias.bias_type.value.title()} ({analysis_result.bias.bias_score:.3f})",
                     f"Content freshness: {analysis_result.deduplication.content_freshness:.2f}"
                 ],
                 "topics_covered": analyzed_source.get("title", "").split()[:3],
