@@ -378,5 +378,5 @@ class StrategyPlanner:
         # In a more complex implementation, this would consider dependencies
         ordered = sorted(sub_questions, key=lambda q: q.importance_score, reverse=True)
 
-        # For now, just return question texts as IDs
-        return [q.question for q in ordered]
+        # Return unique IDs based on question index for better identification
+        return [f"q_{i}" for i, q in enumerate(ordered)]

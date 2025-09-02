@@ -205,7 +205,7 @@ class NLPProcessor:
         total_words = len(words)
         lexical_diversity = unique_words / total_words if total_words > 0 else 0
 
-        # Complex words (words with 3+ syllables - simplified heuristic)
+        # Complex words (words with 7+ characters - simplified heuristic)
         complex_words = sum(1 for word in words if len(word) > 6)
 
         # Calculate score based on multiple factors

@@ -174,7 +174,8 @@ class TaxonomyGenerator:
         for node in nodes:
             if node.parent and node.parent in node_dict:
                 parent_node = node_dict[node.parent]
-                if node.term not in parent_node.children:
+                # Use set for efficient membership checking
+                if node.term not in set(parent_node.children):
                     parent_node.children.append(node.term)
 
     def identify_relevant_domains(self, topic: str) -> list[str]:

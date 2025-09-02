@@ -421,7 +421,7 @@ class DeepResearchServer:
                 query=topic, search_type="web", keywords=keywords
             )
 
-            if cached_results and len(cached_results) > 0:
+            if cached_results:
                 self.logger.info("Using cached web search results")
                 # Ensure we return the correct type
                 if isinstance(cached_results, list):
