@@ -381,6 +381,10 @@ class StrategyPlanner:
         # Return stable identifiers based on original question order
         # Use question ID if available, otherwise use question text
         return [
-            str(getattr(q, "id", q.question)) if getattr(q, "id", None) is not None else q.question
+            (
+                str(getattr(q, "id", q.question))
+                if getattr(q, "id", None) is not None
+                else q.question
+            )
             for q in ordered
         ]

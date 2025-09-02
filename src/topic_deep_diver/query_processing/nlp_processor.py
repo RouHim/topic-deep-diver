@@ -243,7 +243,9 @@ class NLPProcessor:
         if not questions:
             concepts = self.extract_key_concepts(topic)
             # Filter concepts to avoid generating questions for very short or generic terms
-            filtered_concepts = [c for c in concepts if len(c.split()) <= 3 and len(c) > 3][:5]
+            filtered_concepts = [
+                c for c in concepts if len(c.split()) <= 3 and len(c) > 3
+            ][:5]
 
             question_templates = [
                 "What is {concept}?",
@@ -256,6 +258,8 @@ class NLPProcessor:
             for concept in filtered_concepts:
                 # Use different templates for variety
                 template_index = hash(concept) % len(question_templates)
-                questions.append(question_templates[template_index].format(concept=concept))
+                questions.append(
+                    question_templates[template_index].format(concept=concept)
+                )
 
         return questions[:10]  # Limit to 10 sub-questions
