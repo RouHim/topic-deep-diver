@@ -9,7 +9,6 @@ import spacy
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import sent_tokenize, word_tokenize
-from spacy.lang.en import English
 
 from ..logging_config import get_logger
 from .models import QuestionType

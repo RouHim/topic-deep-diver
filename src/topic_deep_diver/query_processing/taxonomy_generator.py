@@ -138,7 +138,9 @@ class TaxonomyGenerator:
         hierarchy = self.domain_hierarchies.get(domain, {})
 
         # Add main domain node
-        nodes.append(TaxonomyNode(term=domain, parent=None, relevance_score=0.9, sources=[]))
+        nodes.append(
+            TaxonomyNode(term=domain, parent=None, relevance_score=0.9, sources=[])
+        )
 
         # Add child domains
         for child in hierarchy.get("children", []):
