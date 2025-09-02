@@ -378,5 +378,9 @@ class StrategyPlanner:
         # In a more complex implementation, this would consider dependencies
         ordered = sorted(sub_questions, key=lambda q: q.importance_score, reverse=True)
 
-        # Return unique IDs based on question index for better identification
-        return [f"q_{i}" for i, q in enumerate(ordered)]
+        # Return stable identifiers based on original question order
+        # Use question ID if available, otherwise use question text
+        return [
+            str(getattr(q, "id", q.question)) if getattr(q, "id", None) is not None else q.question
+            for q in ordered
+        ]

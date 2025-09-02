@@ -43,8 +43,8 @@ class QueryProcessingEngine:
             # Step 1: Analyze the topic
             analysis = await self._analyze_topic(topic)
 
-            # Step 2: Generate taxonomy (for future enhancements)
-            _taxonomy = self.taxonomy_generator.generate_taxonomy(analysis)
+            # Step 2: Generate taxonomy (optional for future enhancements)
+            # taxonomy = self.taxonomy_generator.generate_taxonomy(analysis)  # Uncomment when needed
 
             # Step 3: Create query plan
             plan = self.strategy_planner.create_query_plan(topic, scope, analysis)

@@ -205,7 +205,7 @@ class NLPProcessor:
         total_words = len(words)
         lexical_diversity = unique_words / total_words if total_words > 0 else 0
 
-        # Complex words (words with 7+ characters - simplified heuristic)
+        # Complex words (words with 7+ characters - heuristic for complexity)
         complex_words = sum(1 for word in words if len(word) > 6)
 
         # Calculate score based on multiple factors
@@ -242,8 +242,20 @@ class NLPProcessor:
         # If no explicit questions, generate based on key concepts
         if not questions:
             concepts = self.extract_key_concepts(topic)
-            for concept in concepts[:5]:  # Limit to top 5 concepts
-                questions.append(f"What is {concept}?")
-                questions.append(f"How does {concept} work?")
+            # Filter concepts to avoid generating questions for very short or generic terms
+            filtered_concepts = [c for c in concepts if len(c.split()) <= 3 and len(c) > 3][:5]
+
+            question_templates = [
+                "What is {concept}?",
+                "How does {concept} work?",
+                "What are the benefits of {concept}?",
+                "What are the challenges with {concept}?",
+                "How is {concept} used in practice?",
+            ]
+
+            for concept in filtered_concepts:
+                # Use different templates for variety
+                template_index = hash(concept) % len(question_templates)
+                questions.append(question_templates[template_index].format(concept=concept))
 
         return questions[:10]  # Limit to 10 sub-questions

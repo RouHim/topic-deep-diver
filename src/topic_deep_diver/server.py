@@ -476,9 +476,11 @@ class DeepResearchServer:
             else:
                 # No results from search, fall back to mock data
                 self.logger.warning("Web search returned no results, using mock data")
-                return await self._generate_mock_web_sources(
+                mock_sources = await self._generate_mock_web_sources(
                     topic, keywords, max_sources
                 )
+                self.logger.info(f"Generated {len(mock_sources)} mock sources")
+                return mock_sources
 
         except Exception as e:
             self.logger.error(f"Web search failed: {e}")
