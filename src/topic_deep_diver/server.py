@@ -26,6 +26,7 @@ from .logging_config import get_logger
 from .search.content_extractor import ContentExtractor
 from .search.search_cache import SearchCache
 from .search.searxng_client import SearXNGClient
+from .source_analysis.engine import SourceAnalysisEngine
 
 # Constants for search configuration
 MIN_SOURCE_TYPES = 2
@@ -89,6 +90,9 @@ class DeepResearchServer:
             or "https://search.himmelstein.info"
         )
         self.searxng_client = SearXNGClient(base_url=searx_url)
+
+        # Initialize source analysis engine
+        self.source_analysis_engine = SourceAnalysisEngine()
 
         # Session storage with thread-safe access controls
         self._sessions: dict[str, dict[str, Any]] = {}
@@ -908,30 +912,65 @@ class DeepResearchServer:
     async def _analyze_sources(
         self, sources: list[dict[str, Any]]
     ) -> list[dict[str, Any]]:
-        """Analyze source credibility and extract key information."""
+        """Analyze source credibility and extract key information using comprehensive analysis engine."""
+        if not sources:
+            return []
+
+        self.logger.info(f"Analyzing {len(sources)} sources with comprehensive analysis engine")
+
+        # Convert sources to format expected by analysis engine
+        analysis_sources = []
+        for source in sources:
+            analysis_sources.append({
+                "source_id": source.get("source_id", source.get("url", f"source_{len(analysis_sources)}")),
+                "url": source.get("url", ""),
+                "title": source.get("title", ""),
+                "content": source.get("content") or source.get("summary"),
+                "published_date": source.get("date_published") or source.get("published_date"),
+                "author_info": source.get("author_info"),
+                "citation_count": source.get("citation_count") or source.get("citations")
+            })
+
+        # Perform comprehensive analysis
+        analysis_results = await self.source_analysis_engine.analyze_sources_batch(
+            analysis_sources, max_concurrent=3
+        )
+
+        # Convert back to original format with enhanced analysis
         analyzed_sources = []
+        for original_source, analysis_result in zip(sources, analysis_results):
+            analyzed_source = original_source.copy()
 
-        for index, source in enumerate(sources):
-            # Perform source analysis with basic scoring algorithms
-            analyzed_source = source.copy()
-
-            # Add analysis metadata with deterministic scoring
-            analyzed_source.update(
-                {
-                    "analysis_completed": True,
-                    "bias_score": 0.2 + (index % 30) / 100,  # Deterministic bias score
-                    "relevance_score": 0.7
-                    + ((index * 7) % 30) / 100,  # Deterministic relevance
-                    "key_points": [
-                        f"Key insight 1 from {source['title'][:30]}...",
-                        f"Key insight 2 from {source['title'][:30]}...",
-                    ],
-                    "topics_covered": source["title"].split()[:3],
+            # Add comprehensive analysis results
+            analyzed_source.update({
+                "analysis_completed": True,
+                "credibility_score": analysis_result.credibility.overall_score,
+                "quality_level": analysis_result.credibility.quality_level.value,
+                "bias_score": analysis_result.bias.bias_score,
+                "bias_type": analysis_result.bias.bias_type.value,
+                "commercial_bias": analysis_result.bias.commercial_bias,
+                "sentiment_score": analysis_result.bias.sentiment_score,
+                "is_duplicate": analysis_result.deduplication.is_duplicate,
+                "similarity_score": analysis_result.deduplication.similarity_score,
+                "content_freshness": analysis_result.deduplication.content_freshness,
+                "quality_score": analysis_result.quality_score,
+                "should_include": analysis_result.should_include,
+                "key_points": [
+                    f"Credibility: {analysis_result.credibility.quality_level.value.title()} source",
+                    f"Bias level: {analysis_result.bias.bias_type.value.title()} ({analysis_result.bias.bias_score:.2f})",
+                    f"Content freshness: {analysis_result.deduplication.content_freshness:.2f}"
+                ],
+                "topics_covered": analyzed_source.get("title", "").split()[:3],
+                "analysis_metadata": {
+                    "processing_time_ms": analysis_result.processing_time_ms,
+                    "confidence": analysis_result.credibility.confidence,
+                    "detected_bias_indicators": analysis_result.bias.detected_indicators
                 }
-            )
+            })
 
             analyzed_sources.append(analyzed_source)
 
+        self.logger.info(f"Comprehensive analysis completed for {len(analyzed_sources)} sources")
         return analyzed_sources
 
     async def _analyze_academic_sources(
