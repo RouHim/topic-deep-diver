@@ -2,7 +2,6 @@
 Research taxonomy generation and management.
 """
 
-
 from ..logging_config import get_logger
 from .models import QueryAnalysis, TaxonomyNode
 
@@ -12,32 +11,43 @@ logger = get_logger(__name__)
 class TaxonomyGenerator:
     """Generates and manages research taxonomies for topics."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Pre-defined domain hierarchies
         self.domain_hierarchies = {
             "technology": {
                 "children": ["software", "hardware", "ai", "internet", "mobile"],
                 "software": ["programming", "databases", "web", "security", "cloud"],
                 "ai": ["machine_learning", "nlp", "computer_vision", "robotics"],
-                "hardware": ["computers", "networks", "embedded", "iot"]
+                "hardware": ["computers", "networks", "embedded", "iot"],
             },
             "science": {
-                "children": ["physics", "chemistry", "biology", "mathematics", "earth_science"],
+                "children": [
+                    "physics",
+                    "chemistry",
+                    "biology",
+                    "mathematics",
+                    "earth_science",
+                ],
                 "biology": ["genetics", "ecology", "neuroscience", "microbiology"],
-                "physics": ["quantum", "relativity", "thermodynamics", "electromagnetism"]
+                "physics": [
+                    "quantum",
+                    "relativity",
+                    "thermodynamics",
+                    "electromagnetism",
+                ],
             },
             "health": {
                 "children": ["medicine", "nutrition", "mental_health", "public_health"],
-                "medicine": ["cardiology", "oncology", "neurology", "pediatrics"]
+                "medicine": ["cardiology", "oncology", "neurology", "pediatrics"],
             },
             "business": {
                 "children": ["finance", "marketing", "management", "entrepreneurship"],
-                "finance": ["investing", "banking", "cryptocurrency", "economics"]
+                "finance": ["investing", "banking", "cryptocurrency", "economics"],
             },
             "social": {
                 "children": ["politics", "education", "culture", "sociology"],
-                "politics": ["government", "policy", "international_relations"]
-            }
+                "politics": ["government", "policy", "international_relations"],
+            },
         }
 
     def generate_taxonomy(self, analysis: QueryAnalysis) -> list[TaxonomyNode]:
@@ -56,8 +66,9 @@ class TaxonomyGenerator:
         for concept in analysis.key_concepts:
             node = TaxonomyNode(
                 term=concept,
+                parent=None,
                 relevance_score=self._calculate_concept_relevance(concept, analysis),
-                sources=[]
+                sources=[],
             )
             nodes.append(node)
 
@@ -75,7 +86,9 @@ class TaxonomyGenerator:
 
         return nodes
 
-    def _calculate_concept_relevance(self, concept: str, analysis: QueryAnalysis) -> float:
+    def _calculate_concept_relevance(
+        self, concept: str, analysis: QueryAnalysis
+    ) -> float:
         """
         Calculate relevance score for a concept.
 
@@ -105,7 +118,7 @@ class TaxonomyGenerator:
             "analytical": 1.1,
             "comparative": 1.2,
             "explanatory": 1.1,
-            "predictive": 1.0
+            "predictive": 1.0,
         }.get(analysis.question_type.value, 1.0)
 
         score = (base_score + length_bonus) * type_multiplier
@@ -125,30 +138,25 @@ class TaxonomyGenerator:
         hierarchy = self.domain_hierarchies.get(domain, {})
 
         # Add main domain node
-        nodes.append(TaxonomyNode(
-            term=domain,
-            relevance_score=0.9,
-            sources=[]
-        ))
+        nodes.append(TaxonomyNode(term=domain, parent=None, relevance_score=0.9, sources=[]))
 
         # Add child domains
         for child in hierarchy.get("children", []):
-            nodes.append(TaxonomyNode(
-                term=child,
-                parent=domain,
-                relevance_score=0.7,
-                sources=[]
-            ))
+            nodes.append(
+                TaxonomyNode(term=child, parent=domain, relevance_score=0.7, sources=[])
+            )
 
             # Add grandchild domains if they exist
             if child in hierarchy:
                 for grandchild in hierarchy[child]:
-                    nodes.append(TaxonomyNode(
-                        term=grandchild,
-                        parent=child,
-                        relevance_score=0.5,
-                        sources=[]
-                    ))
+                    nodes.append(
+                        TaxonomyNode(
+                            term=grandchild,
+                            parent=child,
+                            relevance_score=0.5,
+                            sources=[],
+                        )
+                    )
 
         return nodes
 
@@ -181,11 +189,52 @@ class TaxonomyGenerator:
         relevant_domains = []
 
         domain_keywords = {
-            "technology": ["software", "hardware", "computer", "digital", "tech", "ai", "machine learning", "internet"],
-            "science": ["research", "scientific", "physics", "chemistry", "biology", "mathematics", "theory"],
-            "health": ["medical", "health", "disease", "treatment", "medicine", "clinical", "patient"],
-            "business": ["company", "market", "finance", "economy", "business", "corporate", "industry"],
-            "social": ["society", "social", "political", "education", "culture", "community", "policy"]
+            "technology": [
+                "software",
+                "hardware",
+                "computer",
+                "digital",
+                "tech",
+                "ai",
+                "machine learning",
+                "internet",
+            ],
+            "science": [
+                "research",
+                "scientific",
+                "physics",
+                "chemistry",
+                "biology",
+                "mathematics",
+                "theory",
+            ],
+            "health": [
+                "medical",
+                "health",
+                "disease",
+                "treatment",
+                "medicine",
+                "clinical",
+                "patient",
+            ],
+            "business": [
+                "company",
+                "market",
+                "finance",
+                "economy",
+                "business",
+                "corporate",
+                "industry",
+            ],
+            "social": [
+                "society",
+                "social",
+                "political",
+                "education",
+                "culture",
+                "community",
+                "policy",
+            ],
         }
 
         for domain, keywords in domain_keywords.items():

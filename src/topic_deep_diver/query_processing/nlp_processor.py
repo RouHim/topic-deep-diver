@@ -2,6 +2,7 @@
 NLP processing utilities for query analysis and concept extraction.
 """
 
+from typing import Any
 
 import nltk
 import spacy
@@ -19,30 +20,32 @@ logger = get_logger(__name__)
 class NLPProcessor:
     """Handles natural language processing tasks for query analysis."""
 
-    def __init__(self):
-        self.nlp: English | None = None
+    def __init__(self) -> None:
+        self.nlp: Any = None  # spaCy Language model
         self.lemmatizer = WordNetLemmatizer()
         self._ensure_nltk_data()
 
-    def _ensure_nltk_data(self):
+    def _ensure_nltk_data(self) -> None:
         """Ensure required NLTK data is downloaded."""
         try:
-            nltk.data.find('tokenizers/punkt')
-            nltk.data.find('corpora/stopwords')
-            nltk.data.find('corpora/wordnet')
+            nltk.data.find("tokenizers/punkt")
+            nltk.data.find("corpora/stopwords")
+            nltk.data.find("corpora/wordnet")
         except LookupError:
             logger.info("Downloading required NLTK data...")
-            nltk.download('punkt', quiet=True)
-            nltk.download('stopwords', quiet=True)
-            nltk.download('wordnet', quiet=True)
+            nltk.download("punkt", quiet=True)
+            nltk.download("stopwords", quiet=True)
+            nltk.download("wordnet", quiet=True)
 
-    def initialize_spacy(self):
+    def initialize_spacy(self) -> Any:
         """Initialize spaCy model if not already loaded."""
         if self.nlp is None:
             try:
                 self.nlp = spacy.load("en_core_web_sm")
             except OSError:
-                logger.warning("spaCy model 'en_core_web_sm' not found. Using NLTK-only mode.")
+                logger.warning(
+                    "spaCy model 'en_core_web_sm' not found. Using NLTK-only mode."
+                )
                 self.nlp = None  # Will use NLTK fallbacks
         return self.nlp
 
@@ -73,7 +76,14 @@ class NLPProcessor:
 
             # Get named entities
             for ent in doc.ents:
-                if ent.label_ in ['PERSON', 'ORG', 'GPE', 'PRODUCT', 'EVENT', 'WORK_OF_ART']:
+                if ent.label_ in [
+                    "PERSON",
+                    "ORG",
+                    "GPE",
+                    "PRODUCT",
+                    "EVENT",
+                    "WORK_OF_ART",
+                ]:
                     concepts.append(ent.text.lower().strip())
         else:
             # Fallback to NLTK-based extraction
@@ -104,6 +114,7 @@ class NLPProcessor:
 
         # Get most frequent nouns (simple heuristic)
         from collections import Counter
+
         word_freq = Counter(tokens)
 
         # Return most common words as concepts
@@ -123,15 +134,21 @@ class NLPProcessor:
         question_lower = question.lower()
 
         # Question type patterns
-        if any(word in question_lower for word in ['what', 'who', 'when', 'where', 'which']):
+        if any(
+            word in question_lower for word in ["what", "who", "when", "where", "which"]
+        ):
             return QuestionType.FACTUAL
-        elif any(word in question_lower for word in ['why', 'how', 'explain']):
+        elif any(word in question_lower for word in ["why", "how", "explain"]):
             return QuestionType.EXPLANATORY
-        elif any(word in question_lower for word in ['compare', 'difference', 'versus', 'vs']):
+        elif any(
+            word in question_lower for word in ["compare", "difference", "versus", "vs"]
+        ):
             return QuestionType.COMPARATIVE
-        elif any(word in question_lower for word in ['analyze', 'evaluate', 'assess']):
+        elif any(word in question_lower for word in ["analyze", "evaluate", "assess"]):
             return QuestionType.ANALYTICAL
-        elif any(word in question_lower for word in ['will', 'future', 'predict', 'trend']):
+        elif any(
+            word in question_lower for word in ["will", "future", "predict", "trend"]
+        ):
             return QuestionType.PREDICTIVE
         else:
             # Default to analytical for complex questions
@@ -152,14 +169,17 @@ class NLPProcessor:
         tokens = word_tokenize(text.lower())
 
         # Remove stopwords and non-alphabetic tokens
-        stop_words = set(stopwords.words('english'))
-        tokens = [token for token in tokens if token.isalpha() and token not in stop_words]
+        stop_words = set(stopwords.words("english"))
+        tokens = [
+            token for token in tokens if token.isalpha() and token not in stop_words
+        ]
 
         # Lemmatize
         tokens = [self.lemmatizer.lemmatize(token) for token in tokens]
 
         # Count frequency
         from collections import Counter
+
         word_freq = Counter(tokens)
 
         # Get most common words
@@ -195,7 +215,7 @@ class NLPProcessor:
         complexity_factor = complex_words / total_words if total_words > 0 else 0
 
         # Weighted average
-        score = (sentence_factor * 0.4 + diversity_factor * 0.4 + complexity_factor * 0.2)
+        score = sentence_factor * 0.4 + diversity_factor * 0.4 + complexity_factor * 0.2
 
         return min(max(score, 0.0), 1.0)
 
@@ -214,8 +234,10 @@ class NLPProcessor:
         # Look for question-like sentences
         questions = []
         for sentence in sentences:
-            if '?' in sentence or any(sentence.lower().startswith(word)
-                                    for word in ['what', 'how', 'why', 'when', 'where', 'who']):
+            if "?" in sentence or any(
+                sentence.lower().startswith(word)
+                for word in ["what", "how", "why", "when", "where", "who"]
+            ):
                 questions.append(sentence.strip())
 
         # If no explicit questions, generate based on key concepts

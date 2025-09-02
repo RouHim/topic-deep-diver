@@ -12,18 +12,18 @@ try:
     from .engine import QueryProcessingEngine
     from .models import (
         QueryAnalysis,
-        SubQuestion,
-        SearchStrategy,
-        ResearchScope,
         QueryPlan,
         QuestionType,
+        ResearchScope,
+        ScopeConfig,
         SearchEngine,
+        SearchStrategy,
+        SubQuestion,
         TaxonomyNode,
-        ScopeConfig
     )
     from .nlp_processor import NLPProcessor
-    from .taxonomy_generator import TaxonomyGenerator
     from .strategy_planner import StrategyPlanner
+    from .taxonomy_generator import TaxonomyGenerator
 
     __all__ = [
         "QueryProcessingEngine",
@@ -43,6 +43,7 @@ try:
 except ImportError as e:
     # Handle missing dependencies gracefully
     import logging
+
     logger = logging.getLogger(__name__)
     logger.warning(f"Query processing dependencies not available: {e}")
     logger.info("Install NLP dependencies with: uv sync --dev")
@@ -52,5 +53,4 @@ except ImportError as e:
         pass
 
     # Define only in except block to avoid redefinition
-    QueryProcessingEngine = _DummyQueryProcessingEngine
-    __all__ = ["QueryProcessingEngine"]
+    __all__ = ["_DummyQueryProcessingEngine"]

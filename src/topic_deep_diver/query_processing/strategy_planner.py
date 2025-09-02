@@ -5,7 +5,15 @@ Search strategy planning and optimization.
 import time
 
 from ..logging_config import get_logger
-from .models import QueryAnalysis, QueryPlan, ResearchScope, ScopeConfig, SearchEngine, SearchStrategy, SubQuestion
+from .models import (
+    QueryAnalysis,
+    QueryPlan,
+    ResearchScope,
+    ScopeConfig,
+    SearchEngine,
+    SearchStrategy,
+    SubQuestion,
+)
 
 logger = get_logger(__name__)
 
@@ -13,7 +21,7 @@ logger = get_logger(__name__)
 class StrategyPlanner:
     """Plans and optimizes search strategies for research queries."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.scope_configs = self._initialize_scope_configs()
 
     def _initialize_scope_configs(self) -> dict[str, ScopeConfig]:
@@ -24,14 +32,14 @@ class StrategyPlanner:
                 max_sources=15,
                 time_limit=120,  # 2 minutes
                 engines=[SearchEngine.SEARXNG],
-                depth_preference="breadth"
+                depth_preference="breadth",
             ),
             "comprehensive": ScopeConfig(
                 name="comprehensive",
                 max_sources=40,
                 time_limit=300,  # 5 minutes
                 engines=[SearchEngine.SEARXNG, SearchEngine.GOOGLE_SCHOLAR],
-                depth_preference="balanced"
+                depth_preference="balanced",
             ),
             "academic": ScopeConfig(
                 name="academic",
@@ -42,13 +50,15 @@ class StrategyPlanner:
                     SearchEngine.GOOGLE_SCHOLAR,
                     SearchEngine.SEMANTIC_SCHOLAR,
                     SearchEngine.PUBMED,
-                    SearchEngine.ARXIV
+                    SearchEngine.ARXIV,
                 ],
-                depth_preference="depth"
-            )
+                depth_preference="depth",
+            ),
         }
 
-    def create_query_plan(self, topic: str, scope: ResearchScope, analysis: QueryAnalysis) -> QueryPlan:
+    def create_query_plan(
+        self, topic: str, scope: ResearchScope, analysis: QueryAnalysis
+    ) -> QueryPlan:
         """
         Create a comprehensive query plan for research.
 
@@ -63,12 +73,16 @@ class StrategyPlanner:
         logger.info(f"Creating query plan for topic: {topic} with scope: {scope.value}")
 
         # Get scope configuration
-        scope_config = self.scope_configs.get(scope.value, self.scope_configs["comprehensive"])
+        scope_config = self.scope_configs.get(
+            scope.value, self.scope_configs["comprehensive"]
+        )
 
         # Generate search strategies for each sub-question
         strategies = []
         for sub_question in analysis.sub_questions:
-            strategy = self._create_search_strategy(sub_question, scope_config, analysis)
+            strategy = self._create_search_strategy(
+                sub_question, scope_config, analysis
+            )
             strategies.append(strategy)
 
         # Calculate execution order based on dependencies and importance
@@ -90,16 +104,22 @@ class StrategyPlanner:
             total_estimated_time=total_time,
             total_estimated_sources=total_sources,
             priority_order=priority_order,
-            created_at=time.time()
+            created_at=time.time(),
         )
 
-        logger.info(f"Query plan created with {len(strategies)} strategies, "
-                   f"estimated time: {total_time}s, sources: {total_sources}")
+        logger.info(
+            f"Query plan created with {len(strategies)} strategies, "
+            f"estimated time: {total_time}s, sources: {total_sources}"
+        )
 
         return plan
 
-    def _create_search_strategy(self, sub_question: SubQuestion, scope_config: ScopeConfig,
-                               analysis: QueryAnalysis) -> SearchStrategy:
+    def _create_search_strategy(
+        self,
+        sub_question: SubQuestion,
+        scope_config: ScopeConfig,
+        analysis: QueryAnalysis,
+    ) -> SearchStrategy:
         """
         Create a search strategy for a specific sub-question.
 
@@ -131,13 +151,17 @@ class StrategyPlanner:
             scope=search_scope,
             max_results=max_results,
             time_limit=time_limit,
-            filters=filters
+            filters=filters,
         )
 
         return strategy
 
-    def _select_search_engines(self, sub_question: SubQuestion, scope_config: ScopeConfig,
-                              analysis: QueryAnalysis) -> list[SearchEngine]:
+    def _select_search_engines(
+        self,
+        sub_question: SubQuestion,
+        scope_config: ScopeConfig,
+        analysis: QueryAnalysis,
+    ) -> list[SearchEngine]:
         """
         Select appropriate search engines for a sub-question.
 
@@ -199,7 +223,7 @@ class StrategyPlanner:
             "health": [SearchEngine.PUBMED, SearchEngine.SEMANTIC_SCHOLAR],
             "technology": [SearchEngine.SEARXNG, SearchEngine.ARXIV],
             "business": [SearchEngine.SEARXNG],
-            "social": [SearchEngine.SEARXNG, SearchEngine.SEMANTIC_SCHOLAR]
+            "social": [SearchEngine.SEARXNG, SearchEngine.SEMANTIC_SCHOLAR],
         }
 
         return domain_mapping.get(domain, [])
@@ -217,7 +241,7 @@ class StrategyPlanner:
         query = sub_question.question
 
         # Remove question marks and normalize
-        query = query.replace('?', '').strip()
+        query = query.replace("?", "").strip()
 
         # Add important keywords
         if sub_question.keywords:
@@ -233,7 +257,9 @@ class StrategyPlanner:
 
         return query
 
-    def _determine_search_scope(self, sub_question: SubQuestion, scope_config: ScopeConfig) -> str:
+    def _determine_search_scope(
+        self, sub_question: SubQuestion, scope_config: ScopeConfig
+    ) -> str:
         """
         Determine search scope for a sub-question.
 
@@ -262,7 +288,9 @@ class StrategyPlanner:
 
         return scope
 
-    def _calculate_max_results(self, sub_question: SubQuestion, scope_config: ScopeConfig) -> int:
+    def _calculate_max_results(
+        self, sub_question: SubQuestion, scope_config: ScopeConfig
+    ) -> int:
         """
         Calculate maximum results for a sub-question.
 
@@ -283,7 +311,9 @@ class StrategyPlanner:
         # Ensure reasonable bounds
         return max(5, min(max_results, 50))
 
-    def _calculate_time_limit(self, sub_question: SubQuestion, scope_config: ScopeConfig) -> int:
+    def _calculate_time_limit(
+        self, sub_question: SubQuestion, scope_config: ScopeConfig
+    ) -> int:
         """
         Calculate time limit for a sub-question.
 
@@ -303,7 +333,9 @@ class StrategyPlanner:
 
         return max(30, min(time_limit, 300))  # 30s to 5min
 
-    def _create_search_filters(self, sub_question: SubQuestion, analysis: QueryAnalysis) -> dict:
+    def _create_search_filters(
+        self, sub_question: SubQuestion, analysis: QueryAnalysis
+    ) -> dict:
         """
         Create search filters based on question and analysis.
 
@@ -317,16 +349,18 @@ class StrategyPlanner:
         filters = {}
 
         # Add date filters for time-sensitive topics
-        if any(word in analysis.original_topic.lower() for word in
-               ['recent', 'latest', 'current', 'new', '2024', '2025']):
-            filters['date_range'] = 'past_year'
+        if any(
+            word in analysis.original_topic.lower()
+            for word in ["recent", "latest", "current", "new", "2024", "2025"]
+        ):
+            filters["date_range"] = "past_year"
 
         # Add language filter
-        filters['language'] = 'en'
+        filters["language"] = "en"
 
         # Add domain-specific filters
         if sub_question.domain:
-            filters['domain'] = sub_question.domain
+            filters["domain"] = sub_question.domain
 
         return filters
 

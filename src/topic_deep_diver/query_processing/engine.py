@@ -21,7 +21,9 @@ class QueryProcessingEngine:
         self.taxonomy_generator = TaxonomyGenerator()
         self.strategy_planner = StrategyPlanner()
 
-    async def process_query(self, topic: str, scope: ResearchScope = ResearchScope.COMPREHENSIVE) -> QueryPlan:
+    async def process_query(
+        self, topic: str, scope: ResearchScope = ResearchScope.COMPREHENSIVE
+    ) -> QueryPlan:
         """
         Process a research topic and generate a complete query plan.
 
@@ -33,7 +35,9 @@ class QueryProcessingEngine:
             Complete query plan with analysis and strategies
         """
         start_time = time.time()
-        logger.info(f"Starting query processing for topic: {topic} with scope: {scope.value}")
+        logger.info(
+            f"Starting query processing for topic: {topic} with scope: {scope.value}"
+        )
 
         try:
             # Step 1: Analyze the topic
@@ -88,19 +92,23 @@ class QueryProcessingEngine:
         sub_questions = []
         for _i, sq_text in enumerate(sub_question_texts):
             sq_type = self.nlp_processor.identify_question_type(sq_text)
-            importance = self._calculate_subquestion_importance(sq_text, topic, key_concepts)
+            importance = self._calculate_subquestion_importance(
+                sq_text, topic, key_concepts
+            )
 
             sub_question = SubQuestion(
                 question=sq_text,
                 question_type=sq_type,
                 importance_score=importance,
                 keywords=self.nlp_processor.extract_keywords(sq_text, max_keywords=5),
-                domain=None  # Will be set by taxonomy generator
+                domain=None,  # Will be set by taxonomy generator
             )
             sub_questions.append(sub_question)
 
         # Estimate sources needed
-        estimated_sources = self._estimate_sources_needed(complexity_score, len(sub_questions))
+        estimated_sources = self._estimate_sources_needed(
+            complexity_score, len(sub_questions)
+        )
 
         # Identify domains
         domains = self.taxonomy_generator.identify_relevant_domains(topic)
@@ -112,16 +120,19 @@ class QueryProcessingEngine:
             domains=domains,
             complexity_score=complexity_score,
             estimated_sources=estimated_sources,
-            sub_questions=sub_questions
+            sub_questions=sub_questions,
         )
 
-        logger.debug(f"Topic analysis complete: {len(key_concepts)} concepts, "
-                    f"{len(sub_questions)} sub-questions, complexity: {complexity_score:.2f}")
+        logger.debug(
+            f"Topic analysis complete: {len(key_concepts)} concepts, "
+            f"{len(sub_questions)} sub-questions, complexity: {complexity_score:.2f}"
+        )
 
         return analysis
 
-    def _calculate_subquestion_importance(self, sub_question: str, topic: str,
-                                        key_concepts: list) -> float:
+    def _calculate_subquestion_importance(
+        self, sub_question: str, topic: str, key_concepts: list
+    ) -> float:
         """
         Calculate importance score for a sub-question.
 
@@ -139,17 +150,21 @@ class QueryProcessingEngine:
         overlap_score = 0.5
 
         # Bonus for containing key concepts
-        concept_matches = sum(1 for concept in key_concepts if concept.lower() in sq_lower)
+        concept_matches = sum(
+            1 for concept in key_concepts if concept.lower() in sq_lower
+        )
         concept_bonus = min(concept_matches * 0.1, 0.3)
 
         # Bonus for question words that indicate depth
-        depth_indicators = ['why', 'how', 'explain', 'analyze', 'compare']
+        depth_indicators = ["why", "how", "explain", "analyze", "compare"]
         depth_bonus = 0.2 if any(word in sq_lower for word in depth_indicators) else 0.0
 
         importance = overlap_score + concept_bonus + depth_bonus
         return min(importance, 1.0)
 
-    def _estimate_sources_needed(self, complexity_score: float, num_subquestions: int) -> int:
+    def _estimate_sources_needed(
+        self, complexity_score: float, num_subquestions: int
+    ) -> int:
         """
         Estimate the number of sources needed for a topic.
 
@@ -174,7 +189,9 @@ class QueryProcessingEngine:
         # Reasonable bounds
         return max(5, min(estimated, 100))
 
-    async def refine_plan(self, plan: QueryPlan, feedback: dict | None = None) -> QueryPlan:
+    async def refine_plan(
+        self, plan: QueryPlan, feedback: dict | None = None
+    ) -> QueryPlan:
         """
         Refine an existing query plan based on feedback or new information.
 
@@ -202,5 +219,5 @@ class QueryProcessingEngine:
         return {
             "total_queries_processed": 0,
             "average_processing_time": 0.0,
-            "success_rate": 1.0
+            "success_rate": 1.0,
         }
