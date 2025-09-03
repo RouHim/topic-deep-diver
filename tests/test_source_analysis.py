@@ -101,7 +101,7 @@ class TestSourceAnalysisEngine:
         results = await analysis_engine.analyze_sources_batch(sources)
 
         assert len(results) == 2
-        assert all(isinstance(result, type(results[0])) for result in results)
+        assert all(hasattr(result, "source_id") for result in results)
         assert all(result.processing_time_ms > 0 for result in results)
 
     def test_metrics_tracking(self, analysis_engine):

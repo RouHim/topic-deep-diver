@@ -93,7 +93,7 @@ class BiasDetector:
 
             return analysis
 
-        except Exception as e:
+        except (KeyError, TypeError, ValueError, AttributeError) as e:
             self.logger.error(f"Error analyzing bias for '{title}': {e}")
             return BiasAnalysis(bias_type=BiasType.NONE, bias_score=0.0, confidence=0.1)
 

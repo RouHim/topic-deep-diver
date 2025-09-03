@@ -176,7 +176,11 @@ class CredibilityScorer:
             else:
                 return 0.2  # Older than 2 years
 
-        except Exception:
+        except (ValueError, TypeError, AttributeError) as e:
+            self.logger.error(
+                f"Error calculating recency score for published_date '{published_date}': {e}",
+                exc_info=True,
+            )
             return 0.5
 
     def _calculate_author_expertise(self, author_info: dict[str, Any] | None) -> float:

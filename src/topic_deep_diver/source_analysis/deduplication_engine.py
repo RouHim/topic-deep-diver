@@ -159,7 +159,7 @@ class DeduplicationEngine:
 
             return result
 
-        except Exception as e:
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
             self.logger.error(f"Error in deduplication analysis for {source_id}: {e}")
             return DeduplicationResult(
                 is_duplicate=False, similarity_score=0.0, content_freshness=1.0
@@ -211,7 +211,12 @@ class DeduplicationEngine:
             else:
                 return 0.1  # Very old content
 
-        except Exception:
+        except (ValueError, TypeError, AttributeError) as e:
+            self.logger.exception(
+                "Error calculating content freshness for published_date '%s': %s",
+                published_date,
+                e,
+            )
             return 0.5
 
     async def _find_similar_content(

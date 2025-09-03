@@ -262,11 +262,12 @@ class SourceAnalysisEngine:
             self.metrics.credibility_score_distribution.get(quality_level, 0) + 1
         )
 
-        # Update cache hit rate (simplified)
-        if result.metadata.get("cache_used"):
-            self.metrics.cache_hit_rate = (
-                self.metrics.cache_hit_rate * 0.9 + 0.1
-            )  # Exponential moving average
+        # Update cache hit rate (exponential moving average)
+        cache_hit = 1.0 if result.metadata.get("cache_used") else 0.0
+        alpha = 0.9  # Smoothing factor
+        self.metrics.cache_hit_rate = (
+            self.metrics.cache_hit_rate * alpha + cache_hit * (1 - alpha)
+        )
 
         self.metrics.last_updated = result.analysis_timestamp
 
