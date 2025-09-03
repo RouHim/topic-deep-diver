@@ -3,6 +3,7 @@ Main source analysis engine that orchestrates credibility, bias, and deduplicati
 """
 
 import asyncio
+import hashlib
 import time
 from typing import Any
 
@@ -180,10 +181,16 @@ class SourceAnalysisEngine:
             source_data: dict[str, Any],
         ) -> SourceAnalysisResult:
             async with semaphore:
-                # Extract source_id with fallback to url
-                source_id = source_data.get("source_id") or source_data.get(
-                    "url", "unknown"
-                )
+                # Extract source_id with fallback to url or generated unique ID
+                source_id = source_data.get("source_id") or source_data.get("url")
+                if not source_id:
+                    # Generate unique ID based on URL hash and timestamp
+                    url = source_data.get("url", "")
+                    timestamp = str(int(time.time()))
+                    unique_hash = hashlib.md5(f"{url}{timestamp}".encode()).hexdigest()[
+                        :8
+                    ]
+                    source_id = f"unknown_{unique_hash}"
 
                 return await self.analyze_source(
                     source_id=source_id,

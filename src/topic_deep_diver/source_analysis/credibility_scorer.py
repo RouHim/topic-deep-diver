@@ -153,6 +153,10 @@ class CredibilityScorer:
                 pub_date = self._parse_date(published_date)
                 if pub_date is None:
                     # If no format matches, use fallback score
+                    self.logger.debug(
+                        f"Date parsing failed for published_date '{published_date}'. "
+                        f"Using fallback recency score: {self.config.recency_settings['fallback_score']}"
+                    )
                     return self.config.recency_settings["fallback_score"]
             else:
                 pub_date = published_date

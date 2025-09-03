@@ -2,6 +2,7 @@
 Content deduplication engine using text similarity algorithms.
 """
 
+import re
 from collections import defaultdict
 from datetime import datetime
 from typing import Any
@@ -177,8 +178,6 @@ class DeduplicationEngine:
         # Remove common stop words and punctuation
 
         # Simple tokenization and filtering
-        import re
-
         words = re.findall(r"\b\w+\b", combined)
         filtered_words = [
             word for word in words if word not in self.STOP_WORDS and len(word) > 2
