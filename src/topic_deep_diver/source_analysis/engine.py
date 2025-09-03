@@ -180,10 +180,13 @@ class SourceAnalysisEngine:
             source_data: dict[str, Any],
         ) -> SourceAnalysisResult:
             async with semaphore:
+                # Extract source_id with fallback to url
+                source_id = source_data.get("source_id") or source_data.get(
+                    "url", "unknown"
+                )
+
                 return await self.analyze_source(
-                    source_id=source_data.get(
-                        "source_id", source_data.get("url", "unknown")
-                    ),
+                    source_id=source_id,
                     url=source_data.get("url", ""),
                     title=source_data.get("title", ""),
                     content=source_data.get("content"),

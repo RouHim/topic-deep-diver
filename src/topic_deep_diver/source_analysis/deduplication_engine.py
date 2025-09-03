@@ -15,6 +15,69 @@ logger = get_logger(__name__)
 class DeduplicationEngine:
     """Main deduplication engine for content similarity analysis."""
 
+    # Class-level constant for stop words to avoid recreation
+    STOP_WORDS = frozenset(
+        {
+            "the",
+            "a",
+            "an",
+            "and",
+            "or",
+            "but",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "by",
+            "is",
+            "are",
+            "was",
+            "were",
+            "be",
+            "been",
+            "being",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "could",
+            "should",
+            "may",
+            "might",
+            "must",
+            "can",
+            "this",
+            "that",
+            "these",
+            "those",
+            "i",
+            "you",
+            "he",
+            "she",
+            "it",
+            "we",
+            "they",
+            "me",
+            "him",
+            "her",
+            "us",
+            "them",
+            "my",
+            "your",
+            "his",
+            "its",
+            "our",
+            "their",
+        }
+    )
+
     def __init__(self, config: AnalysisConfig | None = None):
         self.config = config or AnalysisConfig()
         self.logger = logger
@@ -112,72 +175,13 @@ class DeduplicationEngine:
         combined = combined.lower()
 
         # Remove common stop words and punctuation
-        stop_words = {
-            "the",
-            "a",
-            "an",
-            "and",
-            "or",
-            "but",
-            "in",
-            "on",
-            "at",
-            "to",
-            "for",
-            "of",
-            "with",
-            "by",
-            "is",
-            "are",
-            "was",
-            "were",
-            "be",
-            "been",
-            "being",
-            "have",
-            "has",
-            "had",
-            "do",
-            "does",
-            "did",
-            "will",
-            "would",
-            "could",
-            "should",
-            "may",
-            "might",
-            "must",
-            "can",
-            "this",
-            "that",
-            "these",
-            "those",
-            "i",
-            "you",
-            "he",
-            "she",
-            "it",
-            "we",
-            "they",
-            "me",
-            "him",
-            "her",
-            "us",
-            "them",
-            "my",
-            "your",
-            "his",
-            "its",
-            "our",
-            "their",
-        }
 
         # Simple tokenization and filtering
         import re
 
         words = re.findall(r"\b\w+\b", combined)
         filtered_words = [
-            word for word in words if word not in stop_words and len(word) > 2
+            word for word in words if word not in self.STOP_WORDS and len(word) > 2
         ]
 
         return " ".join(filtered_words)

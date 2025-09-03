@@ -5,7 +5,6 @@ Data models for source analysis results and configurations.
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
 
 
 class BiasType(Enum):
@@ -40,7 +39,7 @@ class CredibilityScore:
     cross_reference_score: float = 0.0  # 0.0 to 1.0
     quality_level: SourceQuality = SourceQuality.MODERATE
     confidence: float = 0.5  # 0.0 to 1.0
-    factors: dict[str, Any] = field(default_factory=dict)
+    factors: dict[str, str | bool | float] = field(default_factory=dict)
 
 
 @dataclass
@@ -86,7 +85,7 @@ class SourceAnalysisResult:
     )
     analysis_timestamp: datetime = field(default_factory=datetime.now)
     processing_time_ms: float = 0.0
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, str | list[str] | bool] = field(default_factory=dict)
 
     @property
     def quality_score(self) -> float:
@@ -128,11 +127,49 @@ class AnalysisConfig:
         }
     )
 
-    deduplication_settings: dict[str, Any] = field(
+    deduplication_settings: dict[str, float | int] = field(
         default_factory=lambda: {
             "similarity_threshold": 0.85,
             "min_content_length": 100,
             "freshness_decay_days": 30,
+        }
+    )
+
+    recency_settings: dict[str, float] = field(
+        default_factory=lambda: {
+            "fallback_score": 0.7,  # Score when date parsing fails
+            "unknown_date_score": 0.5,  # Score when no date provided
+        }
+    )
+
+    bias_keywords: dict[str, dict[str, list[str]] | list[str]] = field(
+        default_factory=lambda: {
+            "political": {
+                "left": [
+                    "liberal",
+                    "progressive",
+                    "democrat",
+                    "left-wing",
+                    "socialist",
+                ],
+                "right": [
+                    "conservative",
+                    "republican",
+                    "right-wing",
+                    "traditional",
+                    "libertarian",
+                ],
+                "center": ["moderate", "centrist", "balanced", "independent"],
+            },
+            "commercial": [
+                "sponsored",
+                "advertisement",
+                "promo",
+                "affiliate",
+                "endorsed",
+                "paid content",
+                "brand partnership",
+            ],
         }
     )
 

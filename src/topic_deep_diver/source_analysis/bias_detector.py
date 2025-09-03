@@ -15,29 +15,16 @@ class BiasDetector:
         self.config = config or AnalysisConfig()
         self.logger = logger
 
-        # Bias detection patterns
-        self._political_keywords = {
-            "left": ["liberal", "progressive", "democrat", "left-wing", "socialist"],
-            "right": [
-                "conservative",
-                "republican",
-                "right-wing",
-                "traditional",
-                "libertarian",
-            ],
-            "center": ["moderate", "centrist", "balanced", "independent"],
-        }
-
-        self._commercial_indicators = [
-            "sponsored",
-            "advertisement",
-            "promo",
-            "affiliate",
-            "endorsed",
-            "paid content",
-            "brand partnership",
-            "influencer",
-        ]
+        # Bias detection patterns from config
+        bias_keywords = self.config.bias_keywords
+        political_keywords = bias_keywords.get("political", {})
+        self._political_keywords = (
+            political_keywords if isinstance(political_keywords, dict) else {}
+        )
+        commercial_keywords = bias_keywords.get("commercial", [])
+        self._commercial_indicators = (
+            commercial_keywords if isinstance(commercial_keywords, list) else []
+        )
 
     async def analyze_bias(
         self, title: str, content: str | None = None, url: str | None = None

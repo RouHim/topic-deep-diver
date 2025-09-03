@@ -130,24 +130,30 @@ class CredibilityScorer:
         except Exception:
             return 0.5
 
+    def _parse_date(self, published_date: str) -> datetime | None:
+        """Parse date string using common formats."""
+        date_formats = ["%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y", "%m/%d/%Y"]
+
+        for fmt in date_formats:
+            try:
+                return datetime.strptime(published_date, fmt)
+            except ValueError:
+                continue
+
+        return None
+
     def _calculate_recency_score(self, published_date: str | None) -> float:
         """Calculate recency score based on publication date."""
         if not published_date:
-            return 0.5  # Neutral score when date is unknown
+            return self.config.recency_settings["unknown_date_score"]
 
         try:
             # Parse various date formats
             if isinstance(published_date, str):
-                # Try common date formats
-                for fmt in ["%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y", "%m/%d/%Y"]:
-                    try:
-                        pub_date = datetime.strptime(published_date, fmt)
-                        break
-                    except ValueError:
-                        continue
-                else:
-                    # If no format matches, assume recent
-                    return 0.7
+                pub_date = self._parse_date(published_date)
+                if pub_date is None:
+                    # If no format matches, use fallback score
+                    return self.config.recency_settings["fallback_score"]
             else:
                 pub_date = published_date
 
