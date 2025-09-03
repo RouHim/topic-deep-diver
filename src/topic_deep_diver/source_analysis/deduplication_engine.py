@@ -2,6 +2,7 @@
 Content deduplication engine using text similarity algorithms.
 """
 
+import hashlib
 import re
 from collections import defaultdict
 from datetime import datetime
@@ -287,7 +288,10 @@ class DeduplicationEngine:
     def _generate_cluster_id(self, similar_source_id: str) -> str:
         """Generate cluster ID for duplicate content."""
         # Use the first similar source as cluster identifier
-        return f"cluster_{hash(similar_source_id) % 10000}"
+        # Use deterministic hash for consistent cluster IDs
+        hash_obj = hashlib.md5(similar_source_id.encode())
+        hash_value = int(hash_obj.hexdigest(), 16)
+        return f"cluster_{hash_value % 10000}"
 
     async def get_cluster_info(self, cluster_id: str) -> dict[str, Any]:
         """Get information about a content cluster."""

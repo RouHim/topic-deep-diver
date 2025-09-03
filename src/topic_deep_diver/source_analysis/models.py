@@ -170,6 +170,34 @@ class AnalysisConfig:
                 "paid content",
                 "brand partnership",
             ],
+            "sentiment": {
+                "positive": [
+                    "good",
+                    "great",
+                    "excellent",
+                    "amazing",
+                    "wonderful",
+                    "fantastic",
+                    "brilliant",
+                    "outstanding",
+                    "superb",
+                    "marvelous",
+                    "incredible",
+                ],
+                "negative": [
+                    "bad",
+                    "terrible",
+                    "awful",
+                    "horrible",
+                    "dreadful",
+                    "abysmal",
+                    "atrocious",
+                    "appalling",
+                    "dismal",
+                    "dire",
+                    "catastrophic",
+                ],
+            },
         }
     )
 

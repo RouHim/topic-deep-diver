@@ -143,34 +143,19 @@ class BiasDetector:
 
     def _analyze_sentiment(self, text: str) -> float:
         """Analyze sentiment in text (-1.0 to 1.0)."""
-        # Simple sentiment analysis based on word lists
-        positive_words = [
-            "good",
-            "great",
-            "excellent",
-            "amazing",
-            "wonderful",
-            "fantastic",
-            "brilliant",
-            "outstanding",
-            "superb",
-            "marvelous",
-            "incredible",
-        ]
-
-        negative_words = [
-            "bad",
-            "terrible",
-            "awful",
-            "horrible",
-            "dreadful",
-            "abysmal",
-            "atrocious",
-            "appalling",
-            "dismal",
-            "dire",
-            "catastrophic",
-        ]
+        # Simple sentiment analysis based on word lists from config
+        bias_keywords = self.config.bias_keywords
+        if isinstance(bias_keywords, dict):
+            sentiment_keywords = bias_keywords.get("sentiment", {})
+            if isinstance(sentiment_keywords, dict):
+                positive_words = sentiment_keywords.get("positive", [])
+                negative_words = sentiment_keywords.get("negative", [])
+            else:
+                positive_words = []
+                negative_words = []
+        else:
+            positive_words = []
+            negative_words = []
 
         positive_count = sum(1 for word in positive_words if word in text)
         negative_count = sum(1 for word in negative_words if word in text)

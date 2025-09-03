@@ -132,7 +132,15 @@ class CredibilityScorer:
 
     def _parse_date(self, published_date: str) -> datetime | None:
         """Parse date string using common formats."""
-        date_formats = ["%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y", "%m/%d/%Y"]
+        date_formats = [
+            "%Y-%m-%d",
+            "%Y/%m/%d",
+            "%d-%m-%Y",
+            "%m/%d/%Y",
+            "%Y-%m-%dT%H:%M:%S",  # ISO 8601 without timezone
+            "%Y-%m-%dT%H:%M:%SZ",  # ISO 8601 with Z timezone
+            "%Y-%m-%dT%H:%M:%S%z",  # ISO 8601 with timezone offset
+        ]
 
         for fmt in date_formats:
             try:

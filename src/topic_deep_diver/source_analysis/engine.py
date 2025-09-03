@@ -106,8 +106,71 @@ class SourceAnalysisEngine:
 
             # Execute all tasks concurrently
             credibility_result, bias_result, deduplication_result = (
-                await asyncio.gather(credibility_task, bias_task, deduplication_task)
+                await asyncio.gather(
+                    credibility_task,
+                    bias_task,
+                    deduplication_task,
+                    return_exceptions=True,
+                )
             )
+
+            # Handle exceptions from any of the analysis components
+            if isinstance(credibility_result, Exception):
+                self.logger.error(
+                    f"Credibility analysis failed for {source_id}: {credibility_result}"
+                )
+                # Create fallback credibility result
+                credibility_result = type(
+                    "CredibilityScore",
+                    (),
+                    {
+                        "overall_score": 0.5,
+                        "domain_authority": 0.5,
+                        "recency_score": 0.5,
+                        "author_expertise": 0.5,
+                        "citation_count": None,
+                        "cross_reference_score": 0.0,
+                        "quality_level": "moderate",
+                        "confidence": 0.1,
+                        "factors": {},
+                    },
+                )()
+            if isinstance(bias_result, Exception):
+                self.logger.error(
+                    f"Bias analysis failed for {source_id}: {bias_result}"
+                )
+                # Create fallback bias result
+                bias_result = type(
+                    "BiasAnalysis",
+                    (),
+                    {
+                        "bias_type": "none",
+                        "bias_score": 0.0,
+                        "political_bias": None,
+                        "commercial_bias": False,
+                        "sentiment_score": 0.0,
+                        "perspective_diversity": 0.5,
+                        "detected_indicators": [],
+                        "confidence": 0.1,
+                    },
+                )()
+            if isinstance(deduplication_result, Exception):
+                self.logger.error(
+                    f"Deduplication analysis failed for {source_id}: {deduplication_result}"
+                )
+                # Create fallback deduplication result
+                deduplication_result = type(
+                    "DeduplicationResult",
+                    (),
+                    {
+                        "is_duplicate": False,
+                        "similarity_score": 0.0,
+                        "cluster_id": None,
+                        "duplicate_sources": [],
+                        "content_freshness": 1.0,
+                        "redundancy_level": "low",
+                    },
+                )()
 
             # Create comprehensive result
             result = SourceAnalysisResult(
@@ -115,9 +178,9 @@ class SourceAnalysisEngine:
                 url=url,
                 title=title,
                 content=content,
-                credibility=credibility_result,
-                bias=bias_result,
-                deduplication=deduplication_result,
+                credibility=credibility_result,  # type: ignore
+                bias=bias_result,  # type: ignore
+                deduplication=deduplication_result,  # type: ignore
                 processing_time_ms=(time.time() - start_time) * 1000,
                 metadata={
                     "analysis_version": "1.0.0",
