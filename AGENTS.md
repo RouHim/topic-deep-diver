@@ -1,390 +1,244 @@
 # Topic Deep Diver - Project Agents & Knowledge Base
 
-## Build Commands & Development
-- **Install deps**: `uv sync --dev` (with dev dependencies)
-- **Run tests**: `pytest tests/` (run all), `pytest tests/test_server.py::test_specific_function` (single test)
-- **Lint**: `ruff check .` (check), `ruff check --fix .` (fix), `black .` (format)
-- **Type check**: `mypy src/` 
-- **Run server**: `python -m topic_deep_diver` or `uv run python -m topic_deep_diver`
+## Pre-Commit Quality Gates (MANDATORY)
 
-## Pre-Commit Quality Gates
-**ALWAYS run these commands before committing:**
+**CRITICAL: Pre-commit hooks are now ENFORCED!**
+
+### Setup (One-time)
 ```bash
-# Run all quality checks together
+# Install pre-commit hooks
+pip install pre-commit
+pre-commit install
+
+# Or if using uv
+uv add --dev pre-commit
+uv run pre-commit install
+```
+
+### What Happens Automatically
+- **Before each commit**: All quality checks run automatically
+- **If checks fail**: Commit is blocked until issues are fixed
+- **Auto-fixes**: Ruff and Black will auto-fix what they can
+
+### Manual Quality Checks (if needed)
+```bash
+# Quick check (recommended)
 uv run pytest tests/ && uv run ruff check . && uv run black --check . && uv run mypy src/
 
-# Or run individually:
-uv run pytest tests/ -v          # Run tests with verbose output
-uv run ruff check .              # Check linting (use --fix to auto-fix)
-uv run black --check .           # Check formatting (use without --check to format)
-uv run mypy src/                 # Type checking
+# Individual checks
+uv run pytest tests/ -v          # Tests
+uv run ruff check --fix .       # Lint (auto-fix)
+uv run black .                  # Format (auto-fix)
+uv run mypy src/                # Types
 ```
 
-**If any command fails, fix the issues before committing.** The GitHub CI pipeline will fail if these checks don't pass.
+**If any fail, fix issues before committing.** CI will block your PR otherwise.
 
-## CI Pipeline Status
-- **GitHub Actions**: `.github/workflows/ci.yml` runs on push/PR
-- **Quality Gates**: pytest, ruff, black, mypy must all pass
-- **Python Version**: 3.11
-- **OS**: Ubuntu latest only
+## Build Commands & Development
+
+```bash
+# Setup
+uv sync --dev
+
+# Run server
+uv run python -m topic_deep_diver
+
+# Run tests
+uv run pytest tests/ -v
+uv run pytest tests/test_file.py::test_function
+
+# Quality checks (same as above)
+uv run ruff check --fix .    # Lint + auto-fix
+uv run black .               # Format
+uv run mypy src/             # Types
+```
+
+## CI Pipeline
+
+- **Triggers**: Push/PR to any branch
+- **Gates**: pytest, ruff, black, mypy (all must pass)
+- **Environment**: Python 3.11+, Ubuntu 24.04
+- **Debug locally**: Run same commands as pre-commit checks
+
+**CI Failure = PR blocked** - Fix locally first!
+
+## Local CI Testing with act
+
+Test the GitHub Actions pipeline locally before pushing to avoid CI failures:
+
+### Prerequisites
+```bash
+# Install act (GitHub Actions runner)
+curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+
+# Or using package manager
+# Ubuntu/Debian: sudo apt install act
+# macOS: brew install act
+```
+
+### Test Commands
+```bash
+# List available workflows
+act --list
+
+# Test push event (recommended for most cases)
+act push
+
+# Test specific job only
+act push --job test
+
+# Test pull request event
+act pull_request
+
+# Run with verbose output for debugging
+act push --verbose
+
+# Run with timeout to avoid hanging
+timeout 300 act push --job test --verbose
+
+# Use specific Docker image (if needed)
+act push --container-architecture linux/amd64
+```
+
+### Common act Commands
+```bash
+# Test only the test job
+act push --job test
+
+# Use specific event file
+act push --eventpath .github/workflows/event.json
+
+# Skip certain steps
+act push --skip-checkout
+
+# Use different container image
+act push --container-architecture linux/amd64
+
+# Debug with more output
+act push --verbose --log-prefix
+```
+
+### Troubleshooting act Issues
+```bash
+# Check Docker is running
+docker --version
+docker ps
+
+# Clean up act cache
+rm -rf ~/.cache/act
+
+# Use different container image
+act push --container-architecture linux/amd64
+
+# Check workflow syntax
+act push --list
+```
+
+### When to Use act
+- **Before pushing** to catch CI issues locally
+- **When CI fails** to reproduce the issue
+- **When testing workflow changes** before committing
+- **For faster iteration** than waiting for GitHub Actions
+
+### act vs GitHub Actions
+- **act**: Runs locally with Docker, faster feedback
+- **GitHub Actions**: Official CI, runs on GitHub's infrastructure
+- **Use act first**, then verify with GitHub Actions for final validation
 
 ## Code Style Guidelines
-- **Language**: Python 3.11+, use async/await for I/O operations
-- **Imports**: Use absolute imports (`from topic_deep_diver.module import Class`), group stdlib/3rd-party/local
-- **Formatting**: Black (88 char line length), ruff for linting, type hints required (`disallow_untyped_defs = true`)
-- **Naming**: snake_case for functions/variables, PascalCase for classes, UPPER_CASE for constants
-- **Error handling**: Use specific exceptions, log with structured messages via `get_logger("module_name")`
-- **MCP compliance**: Follow 2025-06-18 spec, use FastMCP, structured tool outputs, OAuth Resource Server patterns
-- **Testing**: pytest with asyncio_mode = "auto", use descriptive test names, mock external APIs
-- **Documentation**: Docstrings for all public functions/classes, include Args/Returns sections
+
+- **Language**: Python 3.11+, async/await for I/O
+- **Imports**: Absolute imports, group stdlib/3rd-party/local
+- **Formatting**: Black (88 char), ruff linting, type hints required
+- **Naming**: snake_case functions/vars, PascalCase classes, UPPER_CASE constants
+- **Error handling**: Specific exceptions, structured logging
+- **MCP compliance**: 2025-06-18 spec, FastMCP, structured outputs
+- **Testing**: pytest with asyncio, descriptive names, mock APIs
+- **Documentation**: Docstrings with Args/Returns
 
 ## Project Structure
+
 ```
 topic-deep-diver/
-├── src/topic_deep_diver/      # Main package (note: src/ prefix)
-│   ├── server.py              # MCP server implementation
-│   ├── config.py              # Configuration management
+├── src/topic_deep_diver/      # Main package (src/ prefix)
+│   ├── server.py              # MCP server
+│   ├── config.py              # Configuration
 │   ├── logging_config.py      # Logging setup
 │   └── main.py                # Entry point
 ├── tests/                     # Test suite
-├── config/                    # Configuration files
+├── config/                    # Config files
 └── pyproject.toml             # Project metadata & deps
 ```
 
 ## MCP Tools API
-The server exposes three core MCP tools:
 
-1. **`deep_research(topic: str, scope: str = "comprehensive")`** - Main research orchestrator
-   - Scope options: "quick", "comprehensive", "academic" 
-   - Returns: Structured research report with findings, sources, citations
-
-2. **`research_status(session_id: str)`** - Monitor research progress
-   - Returns: Real-time progress updates and current research stage
-
-3. **`export_research(session_id: str, format: str = "markdown")`** - Export results
-   - Format options: "markdown", "pdf", "json", "html"
-   - Returns: Resource link to exported research report
+**Core Tools:**
+1. `deep_research(topic, scope)` - Main research orchestrator
+2. `research_status(session_id)` - Progress monitoring
+3. `export_research(session_id, format)` - Results export
 
 ## Configuration
-- Config file: `config/config.yaml` (copy from `config/config.example.yaml`)
-- Environment variable: `CONFIG_PATH` for custom config location
-- Dependencies: Redis for caching, external API keys optional for enhanced search
+
+- Config: `config/config.yaml` (copy from example)
+- Env var: `CONFIG_PATH` for custom location
+- Dependencies: Redis caching, optional API keys
 
 ## Project Overview
 
-**Topic Deep Diver** is a fully automated deep research MCP (Model Context Protocol) server that provides comprehensive topic analysis using multiple search engines and AI-powered synthesis. The system is designed to rival commercial solutions like Perplexity's Deep Research while maintaining full automation and extensive online search capabilities.
+**Topic Deep Diver** is a fully automated deep research MCP server providing comprehensive topic analysis using multiple search engines and AI-powered synthesis. Designed to rival commercial solutions like Perplexity's Deep Research.
 
-## Core Requirements
-
-### Functional Requirements
-- **Fully Automated**: Zero user intervention during research process
-- **MCP 2025-06-18 Compliance**: Latest specification support with enhanced security
-- **Comprehensive Search**: Multi-tier search across web, academic, and specialized databases
-- **AI-Powered Synthesis**: Intelligent information aggregation and narrative generation
-- **Structured Output**: JSON-formatted research reports with citations and metadata
-
-### Technical Requirements
-- **Protocol**: Model Context Protocol (MCP) 2025-06-18 specification
-- **Language**: Python (recommended for AI/ML ecosystem)
-- **Architecture**: Multi-agent orchestration with autonomous decision-making
-- **Security**: OAuth Resource Server, Resource Indicators (RFC 8707)
-- **Integration**: Leverage existing MCP tools (fetch, search engines)
-
-## Research Architecture
-
-### Core Pipeline
-```
-User Query → Research Planner → Multi-Search Engine → Content Processor → Knowledge Synthesizer → Structured Report
-```
-
-### Key Components
-
-#### 1. Research Planner Agent
-- Analyzes topic complexity and scope
-- Generates comprehensive search strategy
-- Creates research taxonomy and keywords
-- Determines stopping criteria automatically
-
-#### 2. Multi-Search Orchestrator
-- Parallel execution across multiple search engines
-- Dynamic search refinement based on results
-- Source diversity optimization
-- Real-time result quality assessment
-
-#### 3. Content Analysis Engine
-- Automatic source credibility scoring
-- Content deduplication and clustering
-- Bias detection and perspective analysis
-- Information freshness validation
-
-#### 4. Knowledge Synthesizer
-- Cross-source fact verification
-- Narrative structure generation
-- Citation tracking and management
-- Gap identification and resolution
-
-## MCP 2025-06-18 Features Integration
-
-### New Features to Implement
-- **Structured Tool Output**: Return JSON-structured research reports with `structuredContent`
-- **OAuth Resource Server**: Implement proper authentication for secure API access
-- **Resource Links**: Return URIs to research artifacts instead of inlining everything
-- **Enhanced Security**: Follow new security best practices and Resource Indicators (RFC 8707)
-- **Protocol Version Headers**: Include `MCP-Protocol-Version` header in all HTTP requests
-
-### Removed Features (Not Needed)
-- ~~Elicitation support~~ (Not needed for fully automated system)
-- ~~Interactive user feedback loops~~ (Fully autonomous operation)
-- ~~JSON-RPC batching~~ (Removed from spec)
-
-## Search Integration Strategy
-
-### Multi-Tier Search Architecture
-
-#### 1. Primary Search Engines (General Web)
-- SearXNG instances (privacy-focused, multiple engines)
-- Brave Search API (privacy-respecting, fresh results)
-- Google Search API (comprehensive coverage)
-- Bing Search API (Microsoft ecosystem)
-
-#### 2. Academic Search Engines
-- Google Scholar API (200M+ scholarly articles)
-- Semantic Scholar (AI-enhanced academic search)
-- PubMed API (30M+ medical citations)
-- Crossref API (metadata for scholarly content)
-- CORE API (open access academic papers)
-
-#### 3. Specialized Data Sources
-- arXiv API (preprints in STEM fields)
-- SSRN (social sciences research)
-- RePEc (economics research)
-- Patent databases (USPTO, EPO)
-- News APIs (Reuters, AP, specialized outlets)
-
-#### 4. Content Extraction Tools
-- Fetch MCP server (web content extraction)
-- Firecrawl (JavaScript-heavy sites)
-- Jina Reader (clean text extraction)
-- PDF extraction tools
-
-## Autonomous Decision-Making Algorithms
-
-### 1. Query Decomposition Algorithm
-```
-INPUT: Complex research topic
-PROCESS:
-  - Extract key concepts using NLP
-  - Identify question types (factual, analytical, comparative)
-  - Generate search taxonomy
-  - Prioritize sub-questions by importance
-OUTPUT: Structured research plan with ranked queries
-```
-
-### 2. Search Strategy Selection
-```
-For each sub-question:
-  - Analyze question type and domain
-  - Select appropriate search engines
-  - Determine search parameters
-  - Estimate information need
-```
-
-### 3. Source Credibility Scoring
-```
-FACTORS:
-  - Domain authority (academic institutions, government, established media)
-  - Publication recency and relevance
-  - Citation count and impact factor
-  - Author expertise and credentials
-  - Cross-reference validation
-SCORING: 0-100 credibility score
-```
-
-### 4. Information Synthesis Logic
-```
-PROCESS:
-  - Cluster similar information from multiple sources
-  - Identify consensus vs. conflicting viewpoints
-  - Weight information by source credibility
-  - Generate coherent narrative structure
-  - Track citation chains and evidence strength
-```
-
-### 5. Completion Criteria
-```
-STOP RESEARCH WHEN:
-  - Information saturation reached (diminishing returns)
-  - Confidence threshold met (≥85% coverage)
-  - Maximum time/resource limits hit
-  - All major perspectives captured
-```
+**Core Pipeline:** User Query → Research Planner → Multi-Search Engine → Content Processor → Knowledge Synthesizer → Structured Report
 
 ## Implementation Roadmap
 
 ### Phase 1: Foundation (Weeks 1-2)
-1. **MCP Server Setup**
-   - Initialize Python project with MCP 2025-06-18 SDK
-   - Implement OAuth Resource Server classification
-   - Set up structured tool output capabilities
-   - Create resource link support
-
-2. **Core Tools Implementation**
-   ```python
-   # MCP Tools to expose
-   @mcp_tool
-   def deep_research(topic: str, scope: str = "comprehensive") -> StructuredContent
-   
-   @mcp_tool  
-   def research_status(session_id: str) -> ResearchProgress
-   
-   @mcp_tool
-   def export_research(session_id: str, format: str = "markdown") -> ResourceLink
-   ```
-
-3. **Basic Search Integration**
-   - Integrate with SearXNG for web search
-   - Connect to existing fetch MCP server
-   - Implement basic content extraction
+- MCP Server Setup with 2025-06-18 SDK
+- OAuth Resource Server classification
+- Core tools: deep_research, research_status, export_research
+- Basic SearXNG + Fetch MCP integration
 
 ### Phase 2: Intelligence Layer (Weeks 3-4)
-1. **Query Processing Engine**
-   - Topic decomposition algorithms
-   - Search strategy generation
-   - Priority-based query planning
-
-2. **Source Analysis**
-   - Credibility scoring system
-   - Bias detection algorithms
-   - Content deduplication
-
-3. **Information Synthesis**
-   - Multi-source aggregation
-   - Narrative generation
-   - Citation tracking
+- Query Processing Engine with topic decomposition
+- Source Analysis (credibility, bias detection, deduplication)
+- Information synthesis and citation tracking
 
 ### Phase 3: Advanced Features (Weeks 5-6)
-1. **Academic Integration**
-   - Google Scholar API integration
-   - PubMed and academic database connections
-   - Citation network analysis
-
-2. **Real-time Processing**
-   - Parallel search execution
-   - Progressive result streaming
-   - Dynamic strategy adjustment
-
-3. **Quality Assurance**
-   - Fact-checking protocols
-   - Source verification
-   - Information completeness validation
+- Academic integration (Google Scholar, PubMed)
+- Real-time processing and dynamic strategy adjustment
+- Quality assurance and fact-checking
 
 ### Phase 4: Optimization & Security (Weeks 7-8)
-1. **Security Implementation**
-   - Resource Indicators (RFC 8707) compliance
-   - Protected resource metadata
-   - Secure token handling
+- RFC 8707 compliance and secure token handling
+- Performance optimization and caching
+- Comprehensive testing and documentation
 
-2. **Performance Optimization**
-   - Caching strategies
-   - Rate limiting
-   - Error handling and recovery
+## Key Technologies
 
-3. **Testing & Documentation**
-   - Comprehensive test coverage
-   - API documentation
-   - Usage examples
+**Search Integration:**
+- SearXNG, Brave Search, Google/Bing APIs
+- Academic: Google Scholar, Semantic Scholar, PubMed
+- Specialized: arXiv, SSRN, patent databases
 
-## MCP Server Architecture
+**Content Processing:**
+- Fetch MCP server, Firecrawl, Jina Reader
+- Source credibility scoring (0-100 scale)
+- Bias detection and content deduplication
 
-### Core Tools
-1. `deep_research(topic, scope)` - Main research orchestrator
-2. `research_status(session_id)` - Progress monitoring  
-3. `export_research(session_id, format)` - Results export
-
-### Example Implementation Structure
-```python
-# MCP 2025-06-18 compliance
-class DeepResearchServer:
-    def __init__(self):
-        self.mcp_version = "2025-06-18"
-        self.oauth_metadata = {
-            "authorization_endpoint": "https://auth.topicdeepDiver.com/oauth2/authorize",
-            "resource_indicators_required": True
-        }
-    
-    async def deep_research(self, topic: str) -> StructuredContent:
-        # Return structured JSON with research findings
-        return StructuredContent(
-            type="research_report",
-            data={
-                "executive_summary": "...",
-                "key_findings": [...],
-                "sources": [...],
-                "methodology": "...",
-                "confidence_score": 0.87
-            },
-            resource_links=[
-                ResourceLink(uri="https://research-cache.com/session123/full-report.pdf"),
-                ResourceLink(uri="https://research-cache.com/session123/sources.json")
-            ]
-        )
-```
-
-## Research Insights from Analysis
-
-### Key Findings from MCP Research
-- MCP 2025-06-18 specification includes major security enhancements
-- Structured tool output and resource links are critical new features
-- OAuth Resource Server classification requires proper implementation
-- Elicitation feature removed from scope (user interaction not needed)
-
-### Deep Research System Analysis
-- Perplexity's Test Time Compute (TTC) framework is the gold standard
-- Multi-step iterative reasoning is essential for quality
-- Source credibility and bias detection are critical differentiators
-- Academic integration provides significant value for research quality
-
-### Search Engine Integration Research
-- 15+ search engines and academic databases identified
-- Multi-tier approach (web, academic, specialized) provides comprehensive coverage
-- Content extraction tools are essential for processing diverse sources
-- API rate limiting and error handling are critical for reliability
+**MCP 2025-06-18 Features:**
+- Structured tool output with JSON reports
+- OAuth Resource Server authentication
+- Resource links for research artifacts
+- Enhanced security best practices
 
 ## Success Metrics
 
-### Technical Metrics
-- Research completion time: Target <4 minutes for comprehensive topics
-- Source diversity: Minimum 10 unique, credible sources per report
-- Accuracy rate: >90% fact verification across sources
-- Citation coverage: Complete source attribution and linking
-
-### Quality Metrics
-- Information completeness: >85% coverage of major topic aspects
-- Source credibility: Average credibility score >80/100
-- Synthesis quality: Coherent narrative with balanced perspectives
-- User satisfaction: Comprehensive, actionable research reports
-
-## Next Steps
-
-1. **Repository Setup**: Create project structure and development environment
-2. **Issue Creation**: Break down roadmap into trackable GitHub issues
-3. **MVP Development**: Start with Phase 1 foundation implementation
-4. **Continuous Integration**: Set up testing and deployment pipelines
-5. **Documentation**: Maintain comprehensive API and usage documentation
+- **Completion time**: <4 minutes for comprehensive topics
+- **Source diversity**: 10+ unique credible sources per report
+- **Accuracy**: >90% fact verification
+- **Quality**: >85% topic coverage, >80/100 credibility scores
 
 ## References
 
-### MCP Specification
 - [MCP 2025-06-18 Specification](https://modelcontextprotocol.io/specification/2025-06-18/)
-- [MCP Security Best Practices](https://auth0.com/blog/mcp-specs-update-all-about-auth/)
-- [Microsoft MCP SDK Updates](https://devblogs.microsoft.com/dotnet/mcp-csharp-sdk-2025-06-18-update/)
-
-### Deep Research Systems
-- [Perplexity Deep Research Analysis](https://www.deepestresearch.com/2025/03/perplexity-deep-research-expert-guide.html)
-- [Academic Research Agents](https://github.com/GiovaneIwamoto/deep-research)
-- [OpenAI Deep Research](https://openai.com/index/introducing-deep-research/)
-
-### Search Engine Integration
-- [Academic Search Engines Guide](https://paperguide.ai/blog/academic-search-engines/)
-- [MCP Servers Collection](https://mcpservers.org/)
-- [Web Crawling MCP Servers](https://medium.com/@gkrajoriya3/stop-writing-scrapers-5-best-web-crawling-mcp-servers-with-examples-28d42766c3ff)
+- [Perplexity Deep Research](https://www.deepestresearch.com/)
+- [Academic Search Engines](https://paperguide.ai/blog/academic-search-engines/)
