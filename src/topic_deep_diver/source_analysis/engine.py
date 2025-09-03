@@ -5,7 +5,7 @@ Main source analysis engine that orchestrates credibility, bias, and deduplicati
 import asyncio
 import hashlib
 import time
-from typing import Any
+from typing import Any, cast
 
 from ..logging_config import get_logger
 from .bias_detector import BiasDetector
@@ -14,7 +14,12 @@ from .deduplication_engine import DeduplicationEngine
 from .models import (
     AnalysisConfig,
     AnalysisMetrics,
+    BiasAnalysis,
+    BiasType,
+    CredibilityScore,
+    DeduplicationResult,
     SourceAnalysisResult,
+    SourceQuality,
 )
 
 logger = get_logger(__name__)
@@ -120,57 +125,50 @@ class SourceAnalysisEngine:
                     f"Credibility analysis failed for {source_id}: {credibility_result}"
                 )
                 # Create fallback credibility result
-                credibility_result = type(
-                    "CredibilityScore",
-                    (),
-                    {
-                        "overall_score": 0.5,
-                        "domain_authority": 0.5,
-                        "recency_score": 0.5,
-                        "author_expertise": 0.5,
-                        "citation_count": None,
-                        "cross_reference_score": 0.0,
-                        "quality_level": "moderate",
-                        "confidence": 0.1,
-                        "factors": {},
-                    },
-                )()
+                credibility_result = CredibilityScore(
+                    overall_score=0.5,
+                    domain_authority=0.5,
+                    recency_score=0.5,
+                    author_expertise=0.5,
+                    citation_count=None,
+                    cross_reference_score=0.0,
+                    quality_level=SourceQuality.MODERATE,
+                    confidence=0.1,
+                    factors={},
+                )
             if isinstance(bias_result, Exception):
                 self.logger.error(
                     f"Bias analysis failed for {source_id}: {bias_result}"
                 )
                 # Create fallback bias result
-                bias_result = type(
-                    "BiasAnalysis",
-                    (),
-                    {
-                        "bias_type": "none",
-                        "bias_score": 0.0,
-                        "political_bias": None,
-                        "commercial_bias": False,
-                        "sentiment_score": 0.0,
-                        "perspective_diversity": 0.5,
-                        "detected_indicators": [],
-                        "confidence": 0.1,
-                    },
-                )()
+                bias_result = BiasAnalysis(
+                    bias_type=BiasType.NONE,
+                    bias_score=0.0,
+                    political_bias=None,
+                    commercial_bias=False,
+                    sentiment_score=0.0,
+                    perspective_diversity=0.5,
+                    detected_indicators=[],
+                    confidence=0.1,
+                )
             if isinstance(deduplication_result, Exception):
                 self.logger.error(
                     f"Deduplication analysis failed for {source_id}: {deduplication_result}"
                 )
                 # Create fallback deduplication result
-                deduplication_result = type(
-                    "DeduplicationResult",
-                    (),
-                    {
-                        "is_duplicate": False,
-                        "similarity_score": 0.0,
-                        "cluster_id": None,
-                        "duplicate_sources": [],
-                        "content_freshness": 1.0,
-                        "redundancy_level": "low",
-                    },
-                )()
+                deduplication_result = DeduplicationResult(
+                    is_duplicate=False,
+                    similarity_score=0.0,
+                    cluster_id=None,
+                    duplicate_sources=[],
+                    content_freshness=1.0,
+                    redundancy_level="low",
+                )
+
+            # Cast to proper types after exception handling
+            credibility_result = cast(CredibilityScore, credibility_result)
+            bias_result = cast(BiasAnalysis, bias_result)
+            deduplication_result = cast(DeduplicationResult, deduplication_result)
 
             # Create comprehensive result
             result = SourceAnalysisResult(
@@ -178,9 +176,9 @@ class SourceAnalysisEngine:
                 url=url,
                 title=title,
                 content=content,
-                credibility=credibility_result,  # type: ignore
-                bias=bias_result,  # type: ignore
-                deduplication=deduplication_result,  # type: ignore
+                credibility=credibility_result,
+                bias=bias_result,
+                deduplication=deduplication_result,
                 processing_time_ms=(time.time() - start_time) * 1000,
                 metadata={
                     "analysis_version": "1.0.0",
@@ -250,9 +248,9 @@ class SourceAnalysisEngine:
                     # Generate unique ID based on URL hash and timestamp
                     url = source_data.get("url", "")
                     timestamp = str(int(time.time()))
-                    unique_hash = hashlib.md5(f"{url}{timestamp}".encode()).hexdigest()[
-                        :8
-                    ]
+                    unique_hash = hashlib.sha256(
+                        f"{url}{timestamp}".encode()
+                    ).hexdigest()[:8]
                     source_id = f"unknown_{unique_hash}"
 
                 return await self.analyze_source(

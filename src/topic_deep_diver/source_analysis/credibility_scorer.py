@@ -190,8 +190,7 @@ class CredibilityScorer:
 
         except (ValueError, TypeError, AttributeError) as e:
             self.logger.error(
-                f"Error calculating recency score for published_date '{published_date}': {e}",
-                exc_info=True,
+                f"Error calculating recency score for published_date '{published_date}': {e}"
             )
             return 0.5
 

@@ -41,6 +41,13 @@ class CredibilityScore:
     confidence: float = 0.5  # 0.0 to 1.0
     factors: dict[str, str | bool | float] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        """Validate citation count is non-negative when provided."""
+        if self.citation_count is not None and self.citation_count < 0:
+            raise ValueError(
+                f"citation_count must be non-negative, got {self.citation_count}"
+            )
+
 
 @dataclass
 class BiasAnalysis:

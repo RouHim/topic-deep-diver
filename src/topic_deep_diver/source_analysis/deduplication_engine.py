@@ -289,7 +289,7 @@ class DeduplicationEngine:
         """Generate cluster ID for duplicate content."""
         # Use the first similar source as cluster identifier
         # Use deterministic hash for consistent cluster IDs
-        hash_obj = hashlib.md5(similar_source_id.encode())
+        hash_obj = hashlib.sha256(similar_source_id.encode())
         hash_value = int(hash_obj.hexdigest(), 16)
         return f"cluster_{hash_value % 10000}"
 
