@@ -2,8 +2,25 @@
 
 ## Pre-Commit Quality Gates (MANDATORY)
 
-**CRITICAL: Always run these before committing!**
+**CRITICAL: Pre-commit hooks are now ENFORCED!**
 
+### Setup (One-time)
+```bash
+# Install pre-commit hooks
+pip install pre-commit
+pre-commit install
+
+# Or if using uv
+uv add --dev pre-commit
+uv run pre-commit install
+```
+
+### What Happens Automatically
+- **Before each commit**: All quality checks run automatically
+- **If checks fail**: Commit is blocked until issues are fixed
+- **Auto-fixes**: Ruff and Black will auto-fix what they can
+
+### Manual Quality Checks (if needed)
 ```bash
 # Quick check (recommended)
 uv run pytest tests/ && uv run ruff check . && uv run black --check . && uv run mypy src/
