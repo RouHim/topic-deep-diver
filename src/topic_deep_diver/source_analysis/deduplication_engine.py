@@ -268,9 +268,16 @@ class DeduplicationEngine:
         intersection = words1.intersection(words2)
         union = words1.union(words2)
 
+        # Ensure union is not empty to prevent division by zero
+        if not union:
+            return 0.0
+
         jaccard_similarity = len(intersection) / len(union)
 
-        # Also consider word overlap ratio
+        # Also consider word overlap ratio - ensure both sets have content
+        if len(words1) == 0 or len(words2) == 0:
+            return jaccard_similarity
+
         overlap_ratio = len(intersection) / min(len(words1), len(words2))
 
         # Combine both metrics
