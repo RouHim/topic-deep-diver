@@ -274,10 +274,7 @@ class DeduplicationEngine:
 
         jaccard_similarity = len(intersection) / len(union)
 
-        # Also consider word overlap ratio - ensure both sets have content
-        if len(words1) == 0 or len(words2) == 0:
-            return jaccard_similarity
-
+        # Also consider word overlap ratio
         overlap_ratio = len(intersection) / min(len(words1), len(words2))
 
         # Combine both metrics
