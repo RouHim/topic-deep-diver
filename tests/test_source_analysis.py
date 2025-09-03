@@ -3,6 +3,7 @@ Tests for source analysis engine.
 """
 
 import pytest
+
 from topic_deep_diver.source_analysis.engine import SourceAnalysisEngine
 from topic_deep_diver.source_analysis.models import AnalysisConfig
 
@@ -24,7 +25,7 @@ class TestSourceAnalysisEngine:
             url="https://example.com/article",
             title="Test Article",
             content="This is a test article about technology.",
-            published_date="2024-01-01"
+            published_date="2024-01-01",
         )
 
         assert result.source_id == "test_1"
@@ -45,13 +46,21 @@ class TestSourceAnalysisEngine:
             content="This is a peer-reviewed academic paper with citations.",
             published_date="2024-12-01",  # More recent date
             author_info={"credentials": "PhD", "affiliation": "University of Example"},
-            citation_count=25
+            citation_count=25,
         )
 
         # Should have reasonably high credibility score
-        assert result.credibility.overall_score > 0.6  # Academic source should score well
-        assert result.credibility.domain_authority > 0.8  # Scholar domain should be high
-        assert result.credibility.quality_level.value in ["moderate", "reliable", "high"]  # Allow moderate for now
+        assert (
+            result.credibility.overall_score > 0.6
+        )  # Academic source should score well
+        assert (
+            result.credibility.domain_authority > 0.8
+        )  # Scholar domain should be high
+        assert result.credibility.quality_level.value in [
+            "moderate",
+            "reliable",
+            "high",
+        ]  # Allow moderate for now
         assert result.should_include is True
 
     @pytest.mark.asyncio
@@ -62,7 +71,7 @@ class TestSourceAnalysisEngine:
             url="https://shop.example.com/product",
             title="Amazing Product Review",
             content="This sponsored product is amazing and you should buy it now!",
-            published_date="2024-01-01"
+            published_date="2024-01-01",
         )
 
         # Should detect commercial bias
@@ -78,15 +87,15 @@ class TestSourceAnalysisEngine:
                 "url": "https://news.example.com/article1",
                 "title": "News Article 1",
                 "content": "Breaking news story.",
-                "published_date": "2024-01-01"
+                "published_date": "2024-01-01",
             },
             {
                 "source_id": "batch_2",
                 "url": "https://blog.example.com/post1",
                 "title": "Blog Post 1",
                 "content": "Personal opinion on technology.",
-                "published_date": "2024-01-01"
-            }
+                "published_date": "2024-01-01",
+            },
         ]
 
         results = await analysis_engine.analyze_sources_batch(sources)
@@ -97,12 +106,10 @@ class TestSourceAnalysisEngine:
 
     def test_metrics_tracking(self, analysis_engine):
         """Test that metrics are properly tracked."""
-        initial_count = analysis_engine.metrics.total_sources_analyzed
-
         # Note: In a real test, we'd need to run async analysis
         # For now, just check that metrics object exists
-        assert hasattr(analysis_engine, 'metrics')
-        assert hasattr(analysis_engine.metrics, 'total_sources_analyzed')
+        assert hasattr(analysis_engine, "metrics")
+        assert hasattr(analysis_engine.metrics, "total_sources_analyzed")
 
     def test_cache_functionality(self, analysis_engine):
         """Test caching functionality."""

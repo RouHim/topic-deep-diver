@@ -2,13 +2,8 @@
 Bias detection system for identifying political, commercial, and sentiment bias.
 """
 
-import re
-import time
-from typing import Any, Dict, List, Optional
-
 from ..logging_config import get_logger
-from .models import BiasAnalysis, BiasType, AnalysisConfig
-
+from .models import AnalysisConfig, BiasAnalysis, BiasType
 
 logger = get_logger(__name__)
 
@@ -16,27 +11,36 @@ logger = get_logger(__name__)
 class BiasDetector:
     """Main bias detection engine."""
 
-    def __init__(self, config: Optional[AnalysisConfig] = None):
+    def __init__(self, config: AnalysisConfig | None = None):
         self.config = config or AnalysisConfig()
         self.logger = logger
 
         # Bias detection patterns
         self._political_keywords = {
-            'left': ['liberal', 'progressive', 'democrat', 'left-wing', 'socialist'],
-            'right': ['conservative', 'republican', 'right-wing', 'traditional', 'libertarian'],
-            'center': ['moderate', 'centrist', 'balanced', 'independent']
+            "left": ["liberal", "progressive", "democrat", "left-wing", "socialist"],
+            "right": [
+                "conservative",
+                "republican",
+                "right-wing",
+                "traditional",
+                "libertarian",
+            ],
+            "center": ["moderate", "centrist", "balanced", "independent"],
         }
 
         self._commercial_indicators = [
-            'sponsored', 'advertisement', 'promo', 'affiliate', 'endorsed',
-            'paid content', 'brand partnership', 'influencer'
+            "sponsored",
+            "advertisement",
+            "promo",
+            "affiliate",
+            "endorsed",
+            "paid content",
+            "brand partnership",
+            "influencer",
         ]
 
     async def analyze_bias(
-        self,
-        title: str,
-        content: Optional[str] = None,
-        url: Optional[str] = None
+        self, title: str, content: str | None = None, url: str | None = None
     ) -> BiasAnalysis:
         """
         Analyze content for various types of bias.
@@ -49,13 +53,13 @@ class BiasDetector:
         Returns:
             BiasAnalysis with detailed breakdown
         """
-        start_time = time.time()
-
         try:
             text_to_analyze = f"{title} {content or ''}".lower()
 
             # Detect political bias
-            political_bias, political_score = self._detect_political_bias(text_to_analyze)
+            political_bias, political_score = self._detect_political_bias(
+                text_to_analyze
+            )
 
             # Detect commercial bias
             commercial_bias = self._detect_commercial_bias(text_to_analyze, url)
@@ -74,15 +78,15 @@ class BiasDetector:
             )
 
             # Calculate perspective diversity
-            perspective_diversity = self._calculate_perspective_diversity(text_to_analyze)
+            perspective_diversity = self._calculate_perspective_diversity(
+                text_to_analyze
+            )
 
             # Detect specific indicators
             detected_indicators = self._detect_bias_indicators(text_to_analyze)
 
             # Calculate confidence
             confidence = self._calculate_bias_confidence(content, detected_indicators)
-
-            processing_time = time.time() - start_time
 
             analysis = BiasAnalysis(
                 bias_type=bias_type,
@@ -92,7 +96,7 @@ class BiasDetector:
                 sentiment_score=sentiment_score,
                 perspective_diversity=perspective_diversity,
                 detected_indicators=detected_indicators,
-                confidence=confidence
+                confidence=confidence,
             )
 
             self.logger.debug(
@@ -104,17 +108,17 @@ class BiasDetector:
 
         except Exception as e:
             self.logger.error(f"Error analyzing bias for '{title}': {e}")
-            return BiasAnalysis(
-                bias_type=BiasType.NONE,
-                bias_score=0.0,
-                confidence=0.1
-            )
+            return BiasAnalysis(bias_type=BiasType.NONE, bias_score=0.0, confidence=0.1)
 
-    def _detect_political_bias(self, text: str) -> tuple[Optional[str], float]:
+    def _detect_political_bias(self, text: str) -> tuple[str | None, float]:
         """Detect political bias in text."""
-        left_count = sum(1 for word in self._political_keywords['left'] if word in text)
-        right_count = sum(1 for word in self._political_keywords['right'] if word in text)
-        center_count = sum(1 for word in self._political_keywords['center'] if word in text)
+        left_count = sum(1 for word in self._political_keywords["left"] if word in text)
+        right_count = sum(
+            1 for word in self._political_keywords["right"] if word in text
+        )
+        center_count = sum(
+            1 for word in self._political_keywords["center"] if word in text
+        )
 
         total_political_words = left_count + right_count + center_count
 
@@ -123,27 +127,29 @@ class BiasDetector:
 
         # Calculate bias strength
         if left_count > right_count and left_count > center_count:
-            bias_direction = 'left'
+            bias_direction = "left"
             bias_strength = min(left_count / max(total_political_words, 1), 1.0)
         elif right_count > left_count and right_count > center_count:
-            bias_direction = 'right'
+            bias_direction = "right"
             bias_strength = min(right_count / max(total_political_words, 1), 1.0)
         else:
-            bias_direction = 'center'
+            bias_direction = "center"
             bias_strength = min(center_count / max(total_political_words, 1), 0.5)
 
         return bias_direction, bias_strength
 
-    def _detect_commercial_bias(self, text: str, url: Optional[str] = None) -> bool:
+    def _detect_commercial_bias(self, text: str, url: str | None = None) -> bool:
         """Detect commercial bias indicators."""
         # Check for commercial keywords in text
-        commercial_score = sum(1 for indicator in self._commercial_indicators if indicator in text)
+        commercial_score = sum(
+            1 for indicator in self._commercial_indicators if indicator in text
+        )
 
         # Check URL for commercial patterns
         url_commercial = False
         if url:
             url_lower = url.lower()
-            commercial_domains = ['amazon', 'ebay', 'shop', 'store', 'buy']
+            commercial_domains = ["amazon", "ebay", "shop", "store", "buy"]
             url_commercial = any(domain in url_lower for domain in commercial_domains)
 
         return commercial_score > 2 or url_commercial
@@ -152,13 +158,31 @@ class BiasDetector:
         """Analyze sentiment in text (-1.0 to 1.0)."""
         # Simple sentiment analysis based on word lists
         positive_words = [
-            'good', 'great', 'excellent', 'amazing', 'wonderful', 'fantastic',
-            'brilliant', 'outstanding', 'superb', 'marvelous', 'incredible'
+            "good",
+            "great",
+            "excellent",
+            "amazing",
+            "wonderful",
+            "fantastic",
+            "brilliant",
+            "outstanding",
+            "superb",
+            "marvelous",
+            "incredible",
         ]
 
         negative_words = [
-            'bad', 'terrible', 'awful', 'horrible', 'dreadful', 'abysmal',
-            'atrocious', 'appalling', 'dismal', 'dire', 'catastrophic'
+            "bad",
+            "terrible",
+            "awful",
+            "horrible",
+            "dreadful",
+            "abysmal",
+            "atrocious",
+            "appalling",
+            "dismal",
+            "dire",
+            "catastrophic",
         ]
 
         positive_count = sum(1 for word in positive_words if word in text)
@@ -174,10 +198,7 @@ class BiasDetector:
         return max(-1.0, min(1.0, sentiment_ratio))
 
     def _calculate_overall_bias_score(
-        self,
-        political_score: float,
-        commercial_bias: bool,
-        sentiment_score: float
+        self, political_score: float, commercial_bias: bool, sentiment_score: float
     ) -> float:
         """Calculate overall bias score."""
         score = political_score
@@ -192,10 +213,7 @@ class BiasDetector:
         return min(score, 1.0)
 
     def _determine_primary_bias_type(
-        self,
-        political_bias: Optional[str],
-        commercial_bias: bool,
-        sentiment_score: float
+        self, political_bias: str | None, commercial_bias: bool, sentiment_score: float
     ) -> BiasType:
         """Determine the primary type of bias."""
         if commercial_bias:
@@ -211,17 +229,29 @@ class BiasDetector:
         """Calculate perspective diversity score."""
         # Count different viewpoint indicators
         viewpoint_indicators = [
-            'however', 'although', 'nevertheless', 'on the other hand',
-            'conversely', 'alternatively', 'in contrast', 'despite',
-            'notwithstanding', 'whereas', 'while', 'but', 'yet'
+            "however",
+            "although",
+            "nevertheless",
+            "on the other hand",
+            "conversely",
+            "alternatively",
+            "in contrast",
+            "despite",
+            "notwithstanding",
+            "whereas",
+            "while",
+            "but",
+            "yet",
         ]
 
-        diversity_count = sum(1 for indicator in viewpoint_indicators if indicator in text)
+        diversity_count = sum(
+            1 for indicator in viewpoint_indicators if indicator in text
+        )
 
         # Normalize to 0-1 scale
         return min(diversity_count / 5.0, 1.0)
 
-    def _detect_bias_indicators(self, text: str) -> List[str]:
+    def _detect_bias_indicators(self, text: str) -> list[str]:
         """Detect specific bias indicators in text."""
         indicators = []
 
@@ -242,7 +272,9 @@ class BiasDetector:
 
         return indicators
 
-    def _calculate_bias_confidence(self, content: Optional[str], indicators: List[str]) -> float:
+    def _calculate_bias_confidence(
+        self, content: str | None, indicators: list[str]
+    ) -> float:
         """Calculate confidence in bias analysis."""
         confidence = 0.3  # Base confidence
 

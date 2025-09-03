@@ -45,6 +45,89 @@ uv run mypy src/             # Types
 
 **CI Failure = PR blocked** - Fix locally first!
 
+## Local CI Testing with act
+
+Test the GitHub Actions pipeline locally before pushing to avoid CI failures:
+
+### Prerequisites
+```bash
+# Install act (GitHub Actions runner)
+curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+
+# Or using package manager
+# Ubuntu/Debian: sudo apt install act
+# macOS: brew install act
+```
+
+### Test Commands
+```bash
+# List available workflows
+act --list
+
+# Test push event (recommended for most cases)
+act push
+
+# Test specific job only
+act push --job test
+
+# Test pull request event
+act pull_request
+
+# Run with verbose output for debugging
+act push --verbose
+
+# Run with timeout to avoid hanging
+timeout 300 act push --job test --verbose
+
+# Use specific Docker image (if needed)
+act push --container-architecture linux/amd64
+```
+
+### Common act Commands
+```bash
+# Test only the test job
+act push --job test
+
+# Use specific event file
+act push --eventpath .github/workflows/event.json
+
+# Skip certain steps
+act push --skip-checkout
+
+# Use different container image
+act push --container-architecture linux/amd64
+
+# Debug with more output
+act push --verbose --log-prefix
+```
+
+### Troubleshooting act Issues
+```bash
+# Check Docker is running
+docker --version
+docker ps
+
+# Clean up act cache
+rm -rf ~/.cache/act
+
+# Use different container image
+act push --container-architecture linux/amd64
+
+# Check workflow syntax
+act push --list
+```
+
+### When to Use act
+- **Before pushing** to catch CI issues locally
+- **When CI fails** to reproduce the issue
+- **When testing workflow changes** before committing
+- **For faster iteration** than waiting for GitHub Actions
+
+### act vs GitHub Actions
+- **act**: Runs locally with Docker, faster feedback
+- **GitHub Actions**: Official CI, runs on GitHub's infrastructure
+- **Use act first**, then verify with GitHub Actions for final validation
+
 ## Code Style Guidelines
 
 - **Language**: Python 3.11+, async/await for I/O

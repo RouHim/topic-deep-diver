@@ -4,21 +4,17 @@ Main source analysis engine that orchestrates credibility, bias, and deduplicati
 
 import asyncio
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..logging_config import get_logger
+from .bias_detector import BiasDetector
+from .credibility_scorer import CredibilityScorer
+from .deduplication_engine import DeduplicationEngine
 from .models import (
-    SourceAnalysisResult,
     AnalysisConfig,
     AnalysisMetrics,
-    CredibilityScore,
-    BiasAnalysis,
-    DeduplicationResult
+    SourceAnalysisResult,
 )
-from .credibility_scorer import CredibilityScorer
-from .bias_detector import BiasDetector
-from .deduplication_engine import DeduplicationEngine
-
 
 logger = get_logger(__name__)
 
@@ -26,7 +22,7 @@ logger = get_logger(__name__)
 class SourceAnalysisEngine:
     """Main engine for comprehensive source analysis."""
 
-    def __init__(self, config: Optional[AnalysisConfig] = None):
+    def __init__(self, config: AnalysisConfig | None = None):
         self.config = config or AnalysisConfig()
         self.logger = logger
 
@@ -39,8 +35,8 @@ class SourceAnalysisEngine:
         self.metrics = AnalysisMetrics()
 
         # Analysis cache for performance
-        self._analysis_cache: Dict[str, SourceAnalysisResult] = {}
-        self._cache_timestamps: Dict[str, float] = {}
+        self._analysis_cache: dict[str, SourceAnalysisResult] = {}
+        self._cache_timestamps: dict[str, float] = {}
 
         self.logger.info("SourceAnalysisEngine initialized with all components")
 
@@ -49,12 +45,12 @@ class SourceAnalysisEngine:
         source_id: str,
         url: str,
         title: str,
-        content: Optional[str] = None,
-        published_date: Optional[str] = None,
-        author_info: Optional[Dict[str, Any]] = None,
-        citation_count: Optional[int] = None,
-        existing_sources: Optional[List[Dict[str, Any]]] = None,
-        use_cache: bool = True
+        content: str | None = None,
+        published_date: str | None = None,
+        author_info: dict[str, Any] | None = None,
+        citation_count: int | None = None,
+        existing_sources: list[dict[str, Any]] | None = None,
+        use_cache: bool = True,
     ) -> SourceAnalysisResult:
         """
         Perform comprehensive analysis of a source.
@@ -92,13 +88,11 @@ class SourceAnalysisEngine:
                 content=content,
                 published_date=published_date,
                 author_info=author_info,
-                citation_count=citation_count
+                citation_count=citation_count,
             )
 
             bias_task = self.bias_detector.analyze_bias(
-                title=title,
-                content=content,
-                url=url
+                title=title, content=content, url=url
             )
 
             deduplication_task = self.deduplication_engine.analyze_duplicates(
@@ -106,12 +100,12 @@ class SourceAnalysisEngine:
                 title=title,
                 content=content,
                 published_date=published_date,
-                existing_sources=existing_sources
+                existing_sources=existing_sources,
             )
 
             # Execute all tasks concurrently
-            credibility_result, bias_result, deduplication_result = await asyncio.gather(
-                credibility_task, bias_task, deduplication_task
+            credibility_result, bias_result, deduplication_result = (
+                await asyncio.gather(credibility_task, bias_task, deduplication_task)
             )
 
             # Create comprehensive result
@@ -127,8 +121,8 @@ class SourceAnalysisEngine:
                 metadata={
                     "analysis_version": "1.0.0",
                     "components_used": ["credibility", "bias", "deduplication"],
-                    "cache_used": False
-                }
+                    "cache_used": False,
+                },
             )
 
             # Cache the result
@@ -157,15 +151,15 @@ class SourceAnalysisEngine:
                 url=url,
                 title=title,
                 processing_time_ms=processing_time,
-                metadata={"error": str(e)}
+                metadata={"error": str(e)},
             )
 
     async def analyze_sources_batch(
         self,
-        sources: List[Dict[str, Any]],
-        existing_sources: Optional[List[Dict[str, Any]]] = None,
-        max_concurrent: int = 5
-    ) -> List[SourceAnalysisResult]:
+        sources: list[dict[str, Any]],
+        existing_sources: list[dict[str, Any]] | None = None,
+        max_concurrent: int = 5,
+    ) -> list[SourceAnalysisResult]:
         """
         Analyze multiple sources in batch with controlled concurrency.
 
@@ -182,17 +176,21 @@ class SourceAnalysisEngine:
         semaphore = asyncio.Semaphore(max_concurrent)
         results = []
 
-        async def analyze_with_semaphore(source_data: Dict[str, Any]) -> SourceAnalysisResult:
+        async def analyze_with_semaphore(
+            source_data: dict[str, Any],
+        ) -> SourceAnalysisResult:
             async with semaphore:
                 return await self.analyze_source(
-                    source_id=source_data.get("source_id", source_data.get("url", "unknown")),
+                    source_id=source_data.get(
+                        "source_id", source_data.get("url", "unknown")
+                    ),
                     url=source_data.get("url", ""),
                     title=source_data.get("title", ""),
                     content=source_data.get("content"),
                     published_date=source_data.get("published_date"),
                     author_info=source_data.get("author_info"),
                     citation_count=source_data.get("citation_count"),
-                    existing_sources=existing_sources
+                    existing_sources=existing_sources,
                 )
 
         # Create analysis tasks
@@ -207,19 +205,23 @@ class SourceAnalysisEngine:
                 self.logger.error(f"Batch analysis failed for source {i}: {result}")
                 # Create error result
                 source_data = sources[i]
-                results.append(SourceAnalysisResult(
-                    source_id=source_data.get("source_id", source_data.get("url", f"error_{i}")),
-                    url=source_data.get("url", ""),
-                    title=source_data.get("title", "Analysis Failed"),
-                    metadata={"batch_error": str(result)}
-                ))
+                results.append(
+                    SourceAnalysisResult(
+                        source_id=source_data.get(
+                            "source_id", source_data.get("url", f"error_{i}")
+                        ),
+                        url=source_data.get("url", ""),
+                        title=source_data.get("title", "Analysis Failed"),
+                        metadata={"batch_error": str(result)},
+                    )
+                )
             else:
-                results.append(result)
+                results.append(result)  # type: ignore[arg-type]
 
         self.logger.info(f"Batch analysis completed: {len(results)} results")
         return results
 
-    def _get_cached_result(self, source_id: str) -> Optional[SourceAnalysisResult]:
+    def _get_cached_result(self, source_id: str) -> SourceAnalysisResult | None:
         """Get cached analysis result if still valid."""
         if source_id not in self._analysis_cache:
             return None
@@ -244,14 +246,18 @@ class SourceAnalysisEngine:
         """Update performance metrics."""
         self.metrics.total_sources_analyzed += 1
         self.metrics.average_processing_time_ms = (
-            (self.metrics.average_processing_time_ms * (self.metrics.total_sources_analyzed - 1)) +
-            result.processing_time_ms
+            (
+                self.metrics.average_processing_time_ms
+                * (self.metrics.total_sources_analyzed - 1)
+            )
+            + result.processing_time_ms
         ) / self.metrics.total_sources_analyzed
 
         # Update credibility distribution
         quality_level = result.credibility.quality_level.value
-        self.metrics.credibility_score_distribution[quality_level] = \
+        self.metrics.credibility_score_distribution[quality_level] = (
             self.metrics.credibility_score_distribution.get(quality_level, 0) + 1
+        )
 
         # Update cache hit rate (simplified)
         if result.metadata.get("cache_used"):

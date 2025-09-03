@@ -8,11 +8,16 @@ This module provides comprehensive source quality assessment including:
 - Quality metrics and performance monitoring
 """
 
-from .engine import SourceAnalysisEngine
-from .credibility_scorer import CredibilityScorer
 from .bias_detector import BiasDetector
+from .credibility_scorer import CredibilityScorer
 from .deduplication_engine import DeduplicationEngine
-from .models import SourceAnalysisResult, CredibilityScore, BiasAnalysis, DeduplicationResult
+from .engine import SourceAnalysisEngine
+from .models import (
+    BiasAnalysis,
+    CredibilityScore,
+    DeduplicationResult,
+    SourceAnalysisResult,
+)
 
 __all__ = [
     "SourceAnalysisEngine",

@@ -916,20 +916,29 @@ class DeepResearchServer:
         if not sources:
             return []
 
-        self.logger.info(f"Analyzing {len(sources)} sources with comprehensive analysis engine")
+        self.logger.info(
+            f"Analyzing {len(sources)} sources with comprehensive analysis engine"
+        )
 
         # Convert sources to format expected by analysis engine
-        analysis_sources = []
+        analysis_sources: list[dict[str, Any]] = []
         for source in sources:
-            analysis_sources.append({
-                "source_id": source.get("source_id", source.get("url", f"source_{len(analysis_sources)}")),
-                "url": source.get("url", ""),
-                "title": source.get("title", ""),
-                "content": source.get("content") or source.get("summary"),
-                "published_date": source.get("date_published") or source.get("published_date"),
-                "author_info": source.get("author_info"),
-                "citation_count": source.get("citation_count") or source.get("citations")
-            })
+            analysis_sources.append(
+                {
+                    "source_id": source.get(
+                        "source_id",
+                        source.get("url", f"source_{len(analysis_sources)}"),
+                    ),
+                    "url": source.get("url", ""),
+                    "title": source.get("title", ""),
+                    "content": source.get("content") or source.get("summary"),
+                    "published_date": source.get("date_published")
+                    or source.get("published_date"),
+                    "author_info": source.get("author_info"),
+                    "citation_count": source.get("citation_count")
+                    or source.get("citations"),
+                }
+            )
 
         # Perform comprehensive analysis
         analysis_results = await self.source_analysis_engine.analyze_sources_batch(
@@ -938,40 +947,47 @@ class DeepResearchServer:
 
         # Convert back to original format with enhanced analysis
         analyzed_sources = []
-        for original_source, analysis_result in zip(sources, analysis_results):
+        for original_source, analysis_result in zip(
+            sources, analysis_results, strict=False
+        ):
             analyzed_source = original_source.copy()
 
             # Add comprehensive analysis results
-            analyzed_source.update({
-                "analysis_completed": True,
-                "credibility_score": analysis_result.credibility.overall_score,
-                "quality_level": analysis_result.credibility.quality_level.value,
-                "bias_score": analysis_result.bias.bias_score,
-                "bias_type": analysis_result.bias.bias_type.value,
-                "commercial_bias": analysis_result.bias.commercial_bias,
-                "sentiment_score": analysis_result.bias.sentiment_score,
-                "is_duplicate": analysis_result.deduplication.is_duplicate,
-                "similarity_score": analysis_result.deduplication.similarity_score,
-                "content_freshness": analysis_result.deduplication.content_freshness,
-                "quality_score": analysis_result.quality_score,
-                "should_include": analysis_result.should_include,
-                "relevance_score": 0.7,  # Maintain backward compatibility
-                "key_points": [
-                    f"Credibility: {analysis_result.credibility.quality_level.value.title()} source",
-                    f"Bias level: {analysis_result.bias.bias_type.value.title()} ({analysis_result.bias.bias_score:.3f})",
-                    f"Content freshness: {analysis_result.deduplication.content_freshness:.2f}"
-                ],
-                "topics_covered": analyzed_source.get("title", "").split()[:3],
-                "analysis_metadata": {
-                    "processing_time_ms": analysis_result.processing_time_ms,
-                    "confidence": analysis_result.credibility.confidence,
-                    "detected_bias_indicators": analysis_result.bias.detected_indicators
+            analyzed_source.update(
+                {
+                    "analysis_completed": True,
+                    "credibility_score": analysis_result.credibility.overall_score,
+                    "quality_level": analysis_result.credibility.quality_level.value,
+                    "bias_score": analysis_result.bias.bias_score,
+                    "bias_type": analysis_result.bias.bias_type.value,
+                    "commercial_bias": analysis_result.bias.commercial_bias,
+                    "sentiment_score": analysis_result.bias.sentiment_score,
+                    "is_duplicate": analysis_result.deduplication.is_duplicate,
+                    "similarity_score": analysis_result.deduplication.similarity_score,
+                    "content_freshness": analysis_result.deduplication.content_freshness,
+                    "quality_score": analysis_result.quality_score,
+                    "should_include": analysis_result.should_include,
+                    "relevance_score": 0.7,  # Maintain backward compatibility
+                    "key_points": [
+                        f"Credibility: {analysis_result.credibility.quality_level.value.title()} source",
+                        f"Bias level: {analysis_result.bias.bias_type.value.title()} "
+                        f"({analysis_result.bias.bias_score:.3f})",
+                        f"Content freshness: {analysis_result.deduplication.content_freshness:.2f}",
+                    ],
+                    "topics_covered": analyzed_source.get("title", "").split()[:3],
+                    "analysis_metadata": {
+                        "processing_time_ms": analysis_result.processing_time_ms,
+                        "confidence": analysis_result.credibility.confidence,
+                        "detected_bias_indicators": analysis_result.bias.detected_indicators,
+                    },
                 }
-            })
+            )
 
             analyzed_sources.append(analyzed_source)
 
-        self.logger.info(f"Comprehensive analysis completed for {len(analyzed_sources)} sources")
+        self.logger.info(
+            f"Comprehensive analysis completed for {len(analyzed_sources)} sources"
+        )
         return analyzed_sources
 
     async def _analyze_academic_sources(

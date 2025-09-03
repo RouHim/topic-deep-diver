@@ -2,14 +2,12 @@
 Content deduplication engine using text similarity algorithms.
 """
 
-import time
 from collections import defaultdict
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set
+from datetime import datetime
+from typing import Any
 
 from ..logging_config import get_logger
-from .models import DeduplicationResult, AnalysisConfig
-
+from .models import AnalysisConfig, DeduplicationResult
 
 logger = get_logger(__name__)
 
@@ -17,21 +15,21 @@ logger = get_logger(__name__)
 class DeduplicationEngine:
     """Main deduplication engine for content similarity analysis."""
 
-    def __init__(self, config: Optional[AnalysisConfig] = None):
+    def __init__(self, config: AnalysisConfig | None = None):
         self.config = config or AnalysisConfig()
         self.logger = logger
 
         # In-memory storage for similarity tracking
-        self._content_hashes: Dict[str, str] = {}
-        self._similarity_clusters: Dict[str, List[str]] = defaultdict(list)
+        self._content_hashes: dict[str, str] = {}
+        self._similarity_clusters: dict[str, list[str]] = defaultdict(list)
 
     async def analyze_duplicates(
         self,
         source_id: str,
         title: str,
-        content: Optional[str] = None,
-        published_date: Optional[str] = None,
-        existing_sources: Optional[List[Dict[str, Any]]] = None
+        content: str | None = None,
+        published_date: str | None = None,
+        existing_sources: list[dict[str, Any]] | None = None,
     ) -> DeduplicationResult:
         """
         Analyze content for duplicates and near-duplicates.
@@ -46,17 +44,17 @@ class DeduplicationEngine:
         Returns:
             DeduplicationResult with similarity analysis
         """
-        start_time = time.time()
-
         try:
             # Prepare content for comparison
             content_to_analyze = self._prepare_content(title, content)
 
-            if not content_to_analyze or len(content_to_analyze) < self.config.deduplication_settings["min_content_length"]:
+            if (
+                not content_to_analyze
+                or len(content_to_analyze)
+                < self.config.deduplication_settings["min_content_length"]
+            ):
                 return DeduplicationResult(
-                    is_duplicate=False,
-                    similarity_score=0.0,
-                    content_freshness=1.0
+                    is_duplicate=False, similarity_score=0.0, content_freshness=1.0
                 )
 
             # Calculate content freshness
@@ -68,7 +66,9 @@ class DeduplicationEngine:
             )
 
             # Determine if content is duplicate
-            similarity_threshold = self.config.deduplication_settings["similarity_threshold"]
+            similarity_threshold = self.config.deduplication_settings[
+                "similarity_threshold"
+            ]
             is_duplicate = max_similarity >= similarity_threshold
 
             # Calculate redundancy level
@@ -79,15 +79,13 @@ class DeduplicationEngine:
             if is_duplicate and similar_sources:
                 cluster_id = self._generate_cluster_id(similar_sources[0])
 
-            processing_time = time.time() - start_time
-
             result = DeduplicationResult(
                 is_duplicate=is_duplicate,
                 similarity_score=max_similarity,
                 cluster_id=cluster_id,
                 duplicate_sources=similar_sources,
                 content_freshness=content_freshness,
-                redundancy_level=redundancy_level
+                redundancy_level=redundancy_level,
             )
 
             self.logger.debug(
@@ -101,12 +99,10 @@ class DeduplicationEngine:
         except Exception as e:
             self.logger.error(f"Error in deduplication analysis for {source_id}: {e}")
             return DeduplicationResult(
-                is_duplicate=False,
-                similarity_score=0.0,
-                content_freshness=1.0
+                is_duplicate=False, similarity_score=0.0, content_freshness=1.0
             )
 
-    def _prepare_content(self, title: str, content: Optional[str]) -> str:
+    def _prepare_content(self, title: str, content: str | None) -> str:
         """Prepare content for similarity analysis."""
         if not content:
             return title.lower().strip()
@@ -117,22 +113,76 @@ class DeduplicationEngine:
 
         # Remove common stop words and punctuation
         stop_words = {
-            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-            'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
-            'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
-            'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these',
-            'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him',
-            'her', 'us', 'them', 'my', 'your', 'his', 'its', 'our', 'their'
+            "the",
+            "a",
+            "an",
+            "and",
+            "or",
+            "but",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "by",
+            "is",
+            "are",
+            "was",
+            "were",
+            "be",
+            "been",
+            "being",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "could",
+            "should",
+            "may",
+            "might",
+            "must",
+            "can",
+            "this",
+            "that",
+            "these",
+            "those",
+            "i",
+            "you",
+            "he",
+            "she",
+            "it",
+            "we",
+            "they",
+            "me",
+            "him",
+            "her",
+            "us",
+            "them",
+            "my",
+            "your",
+            "his",
+            "its",
+            "our",
+            "their",
         }
 
         # Simple tokenization and filtering
         import re
-        words = re.findall(r'\b\w+\b', combined)
-        filtered_words = [word for word in words if word not in stop_words and len(word) > 2]
 
-        return ' '.join(filtered_words)
+        words = re.findall(r"\b\w+\b", combined)
+        filtered_words = [
+            word for word in words if word not in stop_words and len(word) > 2
+        ]
 
-    def _calculate_content_freshness(self, published_date: Optional[str]) -> float:
+        return " ".join(filtered_words)
+
+    def _calculate_content_freshness(self, published_date: str | None) -> float:
         """Calculate content freshness score."""
         if not published_date:
             return 0.5  # Neutral freshness when date unknown
@@ -140,7 +190,7 @@ class DeduplicationEngine:
         try:
             if isinstance(published_date, str):
                 # Try to parse the date
-                pub_date = datetime.fromisoformat(published_date.replace('Z', '+00:00'))
+                pub_date = datetime.fromisoformat(published_date.replace("Z", "+00:00"))
             else:
                 pub_date = published_date
 
@@ -153,7 +203,7 @@ class DeduplicationEngine:
                 return 1.0  # Very fresh
             elif days_diff <= decay_days:
                 # Linear decay over the specified period
-                return 1.0 - (days_diff / decay_days)
+                return 1.0 - (days_diff / float(decay_days))
             else:
                 return 0.1  # Very old content
 
@@ -164,8 +214,8 @@ class DeduplicationEngine:
         self,
         source_id: str,
         content: str,
-        existing_sources: Optional[List[Dict[str, Any]]] = None
-    ) -> tuple[List[str], float]:
+        existing_sources: list[dict[str, Any]] | None = None,
+    ) -> tuple[list[str], float]:
         """Find similar content and return most similar sources."""
         if not existing_sources:
             return [], 0.0
@@ -175,8 +225,7 @@ class DeduplicationEngine:
 
         for existing_source in existing_sources:
             existing_content = self._prepare_content(
-                existing_source.get('title', ''),
-                existing_source.get('content')
+                existing_source.get("title", ""), existing_source.get("content")
             )
 
             if not existing_content:
@@ -185,7 +234,11 @@ class DeduplicationEngine:
             similarity = self._calculate_similarity(content, existing_content)
 
             if similarity >= 0.3:  # Only consider somewhat similar content
-                similar_sources.append(existing_source.get('source_id', existing_source.get('url', 'unknown')))
+                similar_sources.append(
+                    existing_source.get(
+                        "source_id", existing_source.get("url", "unknown")
+                    )
+                )
                 max_similarity = max(max_similarity, similarity)
 
         # Return top 3 most similar sources
@@ -228,7 +281,7 @@ class DeduplicationEngine:
         # Use the first similar source as cluster identifier
         return f"cluster_{hash(similar_source_id) % 10000}"
 
-    async def get_cluster_info(self, cluster_id: str) -> Dict[str, Any]:
+    async def get_cluster_info(self, cluster_id: str) -> dict[str, Any]:
         """Get information about a content cluster."""
         cluster_sources = self._similarity_clusters.get(cluster_id, [])
 
@@ -236,7 +289,7 @@ class DeduplicationEngine:
             "cluster_id": cluster_id,
             "source_count": len(cluster_sources),
             "sources": cluster_sources,
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now().isoformat(),
         }
 
     def clear_cache(self) -> None:

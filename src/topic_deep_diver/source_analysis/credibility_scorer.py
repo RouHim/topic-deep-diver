@@ -3,13 +3,12 @@ Credibility scoring system for source quality assessment.
 """
 
 import time
-from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from datetime import datetime
+from typing import Any
 from urllib.parse import urlparse
 
 from ..logging_config import get_logger
-from .models import CredibilityScore, SourceQuality, AnalysisConfig
-
+from .models import AnalysisConfig, CredibilityScore, SourceQuality
 
 logger = get_logger(__name__)
 
@@ -17,7 +16,7 @@ logger = get_logger(__name__)
 class CredibilityScorer:
     """Main credibility scoring engine."""
 
-    def __init__(self, config: Optional[AnalysisConfig] = None):
+    def __init__(self, config: AnalysisConfig | None = None):
         self.config = config or AnalysisConfig()
         self.logger = logger
 
@@ -25,10 +24,10 @@ class CredibilityScorer:
         self,
         url: str,
         title: str,
-        content: Optional[str] = None,
-        published_date: Optional[str] = None,
-        author_info: Optional[Dict[str, Any]] = None,
-        citation_count: Optional[int] = None
+        content: str | None = None,
+        published_date: str | None = None,
+        author_info: dict[str, Any] | None = None,
+        citation_count: int | None = None,
     ) -> CredibilityScore:
         """
         Calculate comprehensive credibility score for a source.
@@ -57,11 +56,11 @@ class CredibilityScorer:
             # Calculate weighted overall score
             weights = self.config.credibility_weights
             overall_score = (
-                domain_score * weights["domain_authority"] +
-                recency_score * weights["recency"] +
-                author_score * weights["author_expertise"] +
-                citation_score * weights["citations"] +
-                cross_ref_score * weights["cross_reference"]
+                domain_score * weights["domain_authority"]
+                + recency_score * weights["recency"]
+                + author_score * weights["author_expertise"]
+                + citation_score * weights["citations"]
+                + cross_ref_score * weights["cross_reference"]
             )
 
             # Determine quality level
@@ -88,8 +87,8 @@ class CredibilityScorer:
                     "has_publication_date": published_date is not None,
                     "has_author_info": author_info is not None,
                     "has_citations": citation_count is not None,
-                    "processing_time_ms": processing_time * 1000
-                }
+                    "processing_time_ms": processing_time * 1000,
+                },
             )
 
             self.logger.debug(
@@ -108,7 +107,7 @@ class CredibilityScorer:
                 author_expertise=0.5,
                 quality_level=SourceQuality.MODERATE,
                 confidence=0.1,
-                factors={"error": str(e)}
+                factors={"error": str(e)},
             )
 
     def _calculate_domain_authority(self, url: str) -> float:
@@ -118,7 +117,7 @@ class CredibilityScorer:
 
             # Check for exact domain matches first
             for domain_pattern, score in self.config.domain_authority_scores.items():
-                if domain_pattern.startswith('.'):
+                if domain_pattern.startswith("."):
                     # TLD match
                     if domain.endswith(domain_pattern):
                         return score
@@ -131,7 +130,7 @@ class CredibilityScorer:
         except Exception:
             return 0.5
 
-    def _calculate_recency_score(self, published_date: Optional[str]) -> float:
+    def _calculate_recency_score(self, published_date: str | None) -> float:
         """Calculate recency score based on publication date."""
         if not published_date:
             return 0.5  # Neutral score when date is unknown
@@ -174,7 +173,7 @@ class CredibilityScorer:
         except Exception:
             return 0.5
 
-    def _calculate_author_expertise(self, author_info: Optional[Dict[str, Any]]) -> float:
+    def _calculate_author_expertise(self, author_info: dict[str, Any] | None) -> float:
         """Calculate author expertise score."""
         if not author_info:
             return 0.5
@@ -195,7 +194,10 @@ class CredibilityScorer:
         # Check for institutional affiliation
         if author_info.get("affiliation"):
             affiliation = author_info["affiliation"].lower()
-            if any(inst in affiliation for inst in [".edu", ".ac.", "university", "college"]):
+            if any(
+                inst in affiliation
+                for inst in [".edu", ".ac.", "university", "college"]
+            ):
                 score += 0.2
                 factors += 1
 
@@ -216,7 +218,7 @@ class CredibilityScorer:
 
         return min(score, 1.0)
 
-    def _calculate_citation_score(self, citation_count: Optional[int]) -> float:
+    def _calculate_citation_score(self, citation_count: int | None) -> float:
         """Calculate citation-based score."""
         if citation_count is None:
             return 0.5
@@ -237,7 +239,9 @@ class CredibilityScorer:
         else:
             return 0.3
 
-    def _determine_quality_level(self, overall_score: float, domain_score: float) -> SourceQuality:
+    def _determine_quality_level(
+        self, overall_score: float, domain_score: float
+    ) -> SourceQuality:
         """Determine quality level based on scores."""
         if overall_score >= 0.85 and domain_score >= 0.8:
             return SourceQuality.HIGH
@@ -252,10 +256,10 @@ class CredibilityScorer:
 
     def _calculate_confidence_score(
         self,
-        published_date: Optional[str],
-        author_info: Optional[Dict[str, Any]],
-        citation_count: Optional[int],
-        content: Optional[str]
+        published_date: str | None,
+        author_info: dict[str, Any] | None,
+        citation_count: int | None,
+        content: str | None,
     ) -> float:
         """Calculate confidence in the credibility score."""
         confidence_factors = 0
