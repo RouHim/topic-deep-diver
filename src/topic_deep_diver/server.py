@@ -27,6 +27,7 @@ from .search.content_extractor import ContentExtractor
 from .search.search_cache import SearchCache
 from .search.searxng_client import SearXNGClient
 from .source_analysis.engine import SourceAnalysisEngine
+from .synthesis.engine import SynthesisEngine
 
 # Constants for search configuration
 MIN_SOURCE_TYPES = 2
@@ -93,6 +94,9 @@ class DeepResearchServer:
 
         # Initialize source analysis engine
         self.source_analysis_engine = SourceAnalysisEngine()
+
+        # Initialize synthesis engine
+        self.synthesis_engine = SynthesisEngine()
 
         # Session storage with thread-safe access controls
         self._sessions: dict[str, dict[str, Any]] = {}
@@ -1048,78 +1052,75 @@ class DeepResearchServer:
     async def _synthesize_findings(
         self, topic: str, sources: list[dict[str, Any]], depth: str = "detailed"
     ) -> dict[str, Any]:
-        """Synthesize research findings into coherent summary."""
-        # Synthesize research using quality-weighted analysis
+        """Synthesize research findings using the new SynthesisEngine."""
+        try:
+            # Generate unique synthesis ID
+            synthesis_id = f"synthesis_{topic.replace(' ', '_')[:30]}_{uuid.uuid4().hex[:8]}"
 
-        high_quality_sources = [
-            s for s in sources if s.get("credibility_score", 0) > 0.7
-        ]
-        total_sources = len(sources)
-        quality_ratio = (
-            len(high_quality_sources) / total_sources if total_sources > 0 else 0
-        )
+            # Use the new SynthesisEngine
+            synthesis_result = await self.synthesis_engine.synthesize(
+                synthesis_id=synthesis_id,
+                topic=topic,
+                sources=sources
+            )
 
-        if depth == "surface":
+            # Convert SynthesisResult to the expected format for backward compatibility
+            return {
+                "executive_summary": synthesis_result.narrative.executive_summary or synthesis_result.narrative.title,
+                "key_findings": synthesis_result.narrative.key_findings,
+                "confidence_score": synthesis_result.overall_quality_score,
+                "synthesis_metadata": {
+                    "total_sources": synthesis_result.aggregation.total_sources,
+                    "high_quality_sources": len([
+                        s for s in sources if s.get("credibility_score", 0) > 0.7
+                    ]),
+                    "quality_ratio": synthesis_result.overall_quality_score,
+                    "synthesis_depth": depth,
+                    "synthesis_date": synthesis_result.timestamp.isoformat(),
+                    "narrative_sections": len(synthesis_result.narrative.sections),
+                    "citations_tracked": synthesis_result.citations.total_citations,
+                    "gaps_identified": synthesis_result.gaps.total_gaps,
+                    "coverage_score": synthesis_result.gaps.coverage_score,
+                },
+            }
+
+        except Exception as e:
+            self.logger.error(f"Synthesis engine failed, falling back to basic synthesis: {e}")
+
+            # Fallback to basic synthesis if the new engine fails
+            high_quality_sources = [
+                s for s in sources if s.get("credibility_score", 0) > 0.7
+            ]
+            total_sources = len(sources)
+            quality_ratio = (
+                len(high_quality_sources) / total_sources if total_sources > 0 else 0
+            )
+
             summary = (
-                f"Quick analysis of {topic} based on {total_sources} sources reveals key insights. "
-                f"Research shows diverse perspectives on this topic with {quality_ratio:.1%} high-quality sources."
+                f"Basic synthesis of {topic} from {total_sources} sources. "
+                f"Analysis reveals key insights with {quality_ratio:.1%} high-quality sources."
             )
 
             findings = [
-                f"Primary insight: {topic} is a significant area of study",
-                f"Source diversity: {total_sources} sources across multiple types",
-                f"Quality assessment: {len(high_quality_sources)} high-credibility sources",
+                f"Topic overview: {topic} analysis completed",
+                f"Source quality: {len(high_quality_sources)} high-credibility sources identified",
+                f"Research scope: {total_sources} total sources processed",
             ]
-            confidence = min(0.9, 0.5 + quality_ratio * 0.4)
 
-        elif depth == "detailed":
-            summary = (
-                f"Comprehensive research on {topic} synthesized from {total_sources} diverse sources "
-                f"provides detailed insights. Analysis of {len(high_quality_sources)} high-quality sources "
-                f"reveals multiple perspectives and evidence-based conclusions."
-            )
-
-            findings = [
-                f"Comprehensive overview: {topic} encompasses multiple dimensions",
-                f"Evidence base: {total_sources} sources with {quality_ratio:.1%} high reliability",
-                f"Research depth: Detailed analysis across {len({s.get('type', 'unknown') for s in sources})} source types",
-                f"Quality assurance: {len(high_quality_sources)} sources exceed credibility threshold",
-                "Coverage assessment: Analysis spans recent and historical perspectives",
-            ]
-            confidence = min(0.95, 0.6 + quality_ratio * 0.35)
-
-        else:  # scholarly
-            summary = (
-                f"Scholarly analysis of {topic} draws from {total_sources} rigorously evaluated sources, "
-                f"including {len([s for s in sources if s.get('type') == 'academic'])} peer-reviewed publications. "
-                "This research synthesis provides evidence-based insights with high methodological rigor."
-            )
-
-            academic_sources = [s for s in sources if s.get("type") == "academic"]
-            citation_count = sum(s.get("citations", 0) for s in academic_sources)
-
-            findings = [
-                f"Scholarly foundation: {len(academic_sources)} peer-reviewed sources",
-                f"Citation impact: {citation_count} total citations across academic sources",
-                "Methodological rigor: Sources evaluated for research quality and bias",
-                "Evidence synthesis: Cross-validation of findings across multiple studies",
-                "Knowledge gaps: Areas identified for future research",
-                f"Theoretical frameworks: Multiple approaches to understanding {topic}",
-            ]
-            confidence = min(0.98, 0.7 + quality_ratio * 0.28)
-
-        return {
-            "executive_summary": summary,
-            "key_findings": findings,
-            "confidence_score": confidence,
-            "synthesis_metadata": {
-                "total_sources": total_sources,
-                "high_quality_sources": len(high_quality_sources),
-                "quality_ratio": quality_ratio,
-                "synthesis_depth": depth,
-                "synthesis_date": datetime.now(UTC_TZ).isoformat(),
-            },
-        }
+            return {
+                "executive_summary": summary,
+                "key_findings": findings,
+                "confidence_score": min(0.8, 0.4 + quality_ratio * 0.4),
+                "synthesis_metadata": {
+                    "total_sources": total_sources,
+                    "high_quality_sources": len(high_quality_sources),
+                    "quality_ratio": quality_ratio,
+                    "synthesis_depth": depth,
+                    "synthesis_date": datetime.now(UTC_TZ).isoformat(),
+                    "fallback_used": True,
+                    "error": str(e),
+                },
+            }
 
     def _setup_tools(self) -> None:
         """Register MCP tools with structured output schemas."""
